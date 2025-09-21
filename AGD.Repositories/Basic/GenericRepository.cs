@@ -12,8 +12,6 @@ namespace AGD.DAL.Basic
     {
         protected readonly DBContext _context;
 
-        public GenericRepository() => _context ??= new DBContext();
-
         public GenericRepository(DBContext context)
         {
             _context = context;
