@@ -3,7 +3,10 @@ using AGD.Repositories.Helpers;
 using AGD.Service.Services.Implement;
 using AGD.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.OData;
 using Microsoft.Extensions.Options;
+using Microsoft.OData.Edm;
+using Microsoft.OData.ModelBuilder;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 
@@ -12,6 +15,13 @@ var builder = WebApplication.CreateBuilder(args);
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
     throw new Exception("Invalid JWT settings in configuration.");
+
+static IEdmModel GetEdmModel()
+{
+    var odataBuilder = new ODataConventionModelBuilder();
+    // chừa ra để đăng ký entity sử dụng odata nha mấy cha
+    return odataBuilder.GetEdmModel();
+}
 
 builder.Services.AddCors(options =>
 {
@@ -27,7 +37,11 @@ builder.Services.AddCors(options =>
 //    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddOData(options =>
+{
+    options.Select().Filter().OrderBy().Expand().SetMaxTop(100).Count();
+    options.AddRouteComponents("odata", GetEdmModel());
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -36,7 +50,7 @@ builder.Services.AddSwaggerGen(options =>
          "v1",
          new OpenApiInfo
          {
-             Title = "My API - V1",
+             Title = "AnGiDay API - V1",
              Version = "v1"
          }
     );
@@ -103,6 +117,8 @@ builder.Services.AddAuthentication(options =>
                 };
             });
 
+builder.Services.AddAuthorization();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -113,16 +129,20 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "AnGiDay v1");
+    });
 }
 
+app.UseRouting();
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-
 app.UseAuthorization();
-app.UseCors("AllowAll");
 
+app.UseStaticFiles();
+app.UseCors("AllowAll");
 app.MapControllers();
 
 app.Run();
