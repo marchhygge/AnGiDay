@@ -1,9 +1,13 @@
 ﻿using AGD.Repositories.ConfigurationModels;
+using AGD.Repositories.DBContext;
 using AGD.Repositories.Helpers;
+using AGD.Repositories.Models;
+using AGD.Repositories.Repositories;
 using AGD.Service.Services.Implement;
 using AGD.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
@@ -19,7 +23,10 @@ if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
 static IEdmModel GetEdmModel()
 {
     var odataBuilder = new ODataConventionModelBuilder();
-    // chừa ra để đăng ký entity sử dụng odata nha mấy cha
+    var restaurants = odataBuilder.EntitySet<Restaurant>("Restaurants");
+    odataBuilder.EntitySet<SignatureFood>("SignatureFoods");
+    //khai báo navigation
+    restaurants.EntityType.HasMany(r => r.SignatureFoods);
     return odataBuilder.GetEdmModel();
 }
 
@@ -32,10 +39,13 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
-// Connect DB
-//builder.Services.AddDbContext<>(options =>
-//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IServicesProvider, ServicesProvider>();
+builder.Services.AddScoped<IRestaurantService, RestaurantService>();
+//Connect DB
+builder.Services.AddDbContext<AnGiDayContext>(options => {
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
 builder.Services.AddControllers().AddOData(options =>
 {
