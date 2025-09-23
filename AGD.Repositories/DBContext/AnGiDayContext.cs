@@ -50,15 +50,15 @@ public partial class AnGiDayContext : DbContext
         return connectionString;
     }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder
-            .UseNpgsql(GetConnectionString("DefaultConnection"));
+    //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    //    => optionsBuilder
+    //        .UseNpgsql(GetConnectionString("DefaultConnection"));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .HasPostgresEnum("notification_type", new[] { "like", "comment", "report", "reply", "system" })
-            .HasPostgresEnum("user_status", new[] { "active", "inactive", "banned" });
+            .HasPostgresEnum("public", "notification_type", new[] { "like", "comment", "report", "reply", "system" })
+            .HasPostgresEnum<UserStatus>("public", "user_status");
 
         modelBuilder.Entity<Bookmark>(entity =>
         {
@@ -595,7 +595,10 @@ public partial class AnGiDayContext : DbContext
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("updated_at");
             entity.Property(e => e.IsDeleted).HasDefaultValue(false).IsRequired().HasColumnName("is_deleted");
             entity.Property(e => e.GoogleId).HasMaxLength(64).HasColumnName("google_id");
-            entity.Property(e => e.Status).IsRequired().HasColumnType("user_status").HasColumnName("status");
+            entity.Property(e => e.Status)
+                  .IsRequired()
+                  .HasColumnType("user_status")
+                  .HasColumnName("status");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
