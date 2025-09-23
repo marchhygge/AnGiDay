@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace AGD.Service.Shared.Result
+﻿namespace AGD.Service.Shared.Result
 {
     public class ApiResult<T>
     {

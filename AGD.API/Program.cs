@@ -1,25 +1,42 @@
 ﻿using AGD.Repositories.ConfigurationModels;
+using AGD.Repositories.DBContext;
 using AGD.Repositories.Helpers;
+using AGD.Repositories.Models;
+using AGD.Repositories.Repositories;
 using AGD.Service.Services.Implement;
 using AGD.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using Microsoft.OpenApi.Models;
+using Npgsql;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
     throw new Exception("Invalid JWT settings in configuration.");
 
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.Configure<GoogleIdTokenOptions>(builder.Configuration.GetSection("GoogleIdToken"));
+
+var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+var dsb = new NpgsqlDataSourceBuilder(cs);
+dsb.MapEnum<UserStatus>("user_status"); // hoặc "public.user_status"
+var dataSource = dsb.Build();
+
 static IEdmModel GetEdmModel()
 {
     var odataBuilder = new ODataConventionModelBuilder();
-    // chừa ra để đăng ký entity sử dụng odata nha mấy cha
+    var restaurants = odataBuilder.EntitySet<Restaurant>("Restaurants");
+    odataBuilder.EntitySet<SignatureFood>("SignatureFoods");
+    //khai báo navigation
+    restaurants.EntityType.HasMany(r => r.SignatureFoods);
     return odataBuilder.GetEdmModel();
 }
 
@@ -32,10 +49,19 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
-// Connect DB
-//builder.Services.AddDbContext<>(options =>
-//    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+builder.Services.AddSingleton<JwtHelper>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IServicesProvider, ServicesProvider>();
+builder.Services.AddScoped<IRestaurantService, RestaurantService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+//Connect DB
+builder.Services.AddDbContext<AnGiDayContext>(options =>
+{
+    options.UseNpgsql(dataSource);
+    options.EnableDetailedErrors();
+    options.EnableSensitiveDataLogging();
+});
 
 builder.Services.AddControllers().AddOData(options =>
 {
@@ -85,10 +111,6 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 // Add Scope
 builder.Services.AddScoped<IEmailService, EmailService>();
-
-
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 
 builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 builder.Services.AddSingleton<JwtHelper>();
