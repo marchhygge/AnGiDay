@@ -20,5 +20,10 @@ namespace AGD.Repositories.Repositories
         {
             return await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email && !u.IsDeleted, ct);
         }
+
+        public async Task<User?> GetByGoogleIdAsync(string googleId, CancellationToken ct = default)
+        {
+            return await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.GoogleId == googleId && !u.IsDeleted, ct);
+        }
     }
 }
