@@ -24,7 +24,7 @@ namespace AGD.Repositories.Helpers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(ClaimTypes.Role, user.Role.ToString()!),
+                new Claim(ClaimTypes.Role, user.RoleId.ToString() ?? "user"),
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
@@ -41,6 +41,31 @@ namespace AGD.Repositories.Helpers
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
             Console.WriteLine($"Generated JWT: {jwt}");
             return jwt;
+        }
+
+        public string GenerateTokenForGoogleLogin(User user)
+        {
+            var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new("username", user.Username),
+            new("role", user.RoleId.ToString() ?? "user")
+        };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var now = DateTime.UtcNow;
+
+            var token = new JwtSecurityToken(
+                issuer: _settings.Issuer,
+                audience: _settings.Audience,
+                claims: claims,
+                notBefore: now,
+                expires: now.AddMinutes(_settings.ExpirationInMinutes),
+                signingCredentials: creds);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

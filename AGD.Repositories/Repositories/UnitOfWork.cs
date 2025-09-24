@@ -14,6 +14,7 @@ namespace AGD.Repositories.Repositories
         // khi cần gom nhiều thao tác vào 1 transaction thì dùng hàm này
         Task ExecuteInTransactionAsync(Func<CancellationToken, Task> action, CancellationToken ct = default);
         RestaurantRepository RestaurantRepository { get; }
+        UserRepository UserRepository { get; }
     }
 
     public class UnitOfWork : IUnitOfWork
@@ -23,6 +24,7 @@ namespace AGD.Repositories.Repositories
         private IDbContextTransaction? _transaction;
         private bool _disposed;
         private RestaurantRepository? _restaurantRepository;
+        private UserRepository? _userRepository;
 
         public UnitOfWork(JwtHelper jwtHelper, AnGiDayContext context)
         {
@@ -31,6 +33,7 @@ namespace AGD.Repositories.Repositories
         }
 
         public RestaurantRepository RestaurantRepository => _restaurantRepository ??= new RestaurantRepository(_context);
+        public UserRepository UserRepository => _userRepository ??= new UserRepository(_context);
 
         public JwtHelper JwtHelper => _jwtHelper;
 

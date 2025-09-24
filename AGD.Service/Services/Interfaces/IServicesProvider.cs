@@ -3,5 +3,6 @@
     public interface IServicesProvider
     {
         IRestaurantService RestaurantService { get; }
+        IUserService UserService { get; }
     }
 }
