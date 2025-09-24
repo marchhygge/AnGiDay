@@ -33,7 +33,7 @@ namespace AGD.Repositories.Repositories
         public IQueryable<Restaurant> GetRestaurantsByTags(List<int> tagId)
         {
             IQueryable<Restaurant> query = _context.Restaurants.AsNoTracking()
-                .Include(r => r.RestaurantTags).ThenInclude(rt => rt.Tag).Where(rt => !rt.IsDeleted)
+                .Where(rt => !rt.IsDeleted)
                 .AsQueryable();
 
             if(tagId != null && tagId.Count != 0)
