@@ -1,10 +1,8 @@
 ﻿using AGD.Repositories.Models;
 using AGD.Service.Services.Interfaces;
-using AGD.Service.Shared.Result;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.AspNetCore.OData.Routing.Controllers;
-using Microsoft.Extensions.Options;
 
 namespace AGD.API.Controllers
 {
