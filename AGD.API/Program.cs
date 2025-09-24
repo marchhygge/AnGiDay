@@ -24,10 +24,12 @@ if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
 
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.Configure<GoogleIdTokenOptions>(builder.Configuration.GetSection("GoogleIdToken"));
+builder.Services.Configure<R2Options>(builder.Configuration.GetSection("R2"));
 
 var cs = builder.Configuration.GetConnectionString("DefaultConnection");
 var dsb = new NpgsqlDataSourceBuilder(cs);
 dsb.MapEnum<UserStatus>("user_status"); // hoặc "public.user_status"
+dsb.MapEnum<NotificationType>("notification_type");
 var dataSource = dsb.Build();
 
 static IEdmModel GetEdmModel()
@@ -55,6 +57,7 @@ builder.Services.AddScoped<IServicesProvider, ServicesProvider>();
 builder.Services.AddScoped<IRestaurantService, RestaurantService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IObjectStorageService, R2StorageService>();
 //Connect DB
 builder.Services.AddDbContext<AnGiDayContext>(options =>
 {
@@ -163,7 +166,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseStaticFiles();
 app.UseCors("AllowAll");
 app.MapControllers();
 
