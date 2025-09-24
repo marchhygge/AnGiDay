@@ -57,7 +57,7 @@ public partial class AnGiDayContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
-            .HasPostgresEnum("public", "notification_type", new[] { "like", "comment", "report", "reply", "system" })
+            .HasPostgresEnum<NotificationType>("public", "notification_type")
             .HasPostgresEnum<UserStatus>("public", "user_status");
 
         modelBuilder.Entity<Bookmark>(entity =>

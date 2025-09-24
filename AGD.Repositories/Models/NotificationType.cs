@@ -2,10 +2,10 @@
 {
     public enum NotificationType
     {
-        like,
-        comment,
-        report,
-        reply,
-        system
+        like = 1,
+        comment = 2,
+        report = 3,
+        reply = 4,
+        system = 0
     }
 }
