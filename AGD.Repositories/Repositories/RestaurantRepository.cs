@@ -29,5 +29,20 @@ namespace AGD.Repositories.Repositories
 
             return query;
         }
+
+        public IQueryable<Restaurant> GetRestaurantsByTags(List<int> tagId)
+        {
+            IQueryable<Restaurant> query = _context.Restaurants.AsNoTracking()
+                .Include(r => r.RestaurantTags).ThenInclude(rt => rt.Tag).Where(rt => !rt.IsDeleted)
+                .AsQueryable();
+
+            if(tagId != null && tagId.Count != 0)
+            {
+                query = query.Where(r =>
+                    r.RestaurantTags.Any(rt => tagId.Contains(rt.TagId)));
+            }
+
+            return query;
+        }
     }
 }
