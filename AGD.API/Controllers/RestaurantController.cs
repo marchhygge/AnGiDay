@@ -22,5 +22,12 @@ namespace AGD.API.Controllers
         {
             return _servicesProvider.RestaurantService.SearchRestaurants(restaurantName, signatureFoodName);
         }
+
+        [HttpGet("filter-restaurant")]
+        [EnableQuery(PageSize = 20, MaxNodeCount = 80)]
+        public IQueryable<Restaurant> GetRestaurantsByTags([FromQuery] List<int> tagIds)
+        {
+            return _servicesProvider.RestaurantService.GetRestaurantsByTags(tagIds);
+        }
     }
 }

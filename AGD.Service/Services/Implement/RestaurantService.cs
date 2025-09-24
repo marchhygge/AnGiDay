@@ -44,5 +44,10 @@ namespace AGD.Service.Services.Implement
             await _unitOfWork.RestaurantRepository.UpdateAsync(entity, ct);
             await _unitOfWork.SaveChangesAsync(ct);
         }
+
+        public IQueryable<Restaurant> GetRestaurantsByTags(List<int> tagIds)
+        {
+            return _unitOfWork.RestaurantRepository.GetRestaurantsByTags(tagIds);
+        }
     }
 }
