@@ -9,5 +9,6 @@ namespace AGD.Service.Services.Interfaces
         Task<int> CreateAsync(Restaurant entity, CancellationToken ct = default);
         Task UpdateAsync(Restaurant entity, CancellationToken ct = default);
         Task DeleteAsync(int id, CancellationToken ct = default);
+        IQueryable<Restaurant> GetRestaurantsByTags(List<int> tagIds);
     }
 }
