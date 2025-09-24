@@ -56,6 +56,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IServicesProvider, ServicesProvider>();
 builder.Services.AddScoped<IRestaurantService, RestaurantService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IBookmarkService, BookmarkService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IObjectStorageService, R2StorageService>();
 //Connect DB
@@ -112,9 +113,6 @@ builder.Services.AddSwaggerGen(options =>
 //Mapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-// Add Scope
-builder.Services.AddScoped<IEmailService, EmailService>();
-
 builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 builder.Services.AddSingleton<JwtHelper>();
 
@@ -142,7 +140,11 @@ builder.Services.AddAuthentication(options =>
                 };
             });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("1"));
+    options.AddPolicy("Require", policy => policy.RequireRole("User"));
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

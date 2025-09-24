@@ -5,5 +5,6 @@
         IRestaurantService RestaurantService { get; }
         IUserService UserService { get; }
         IObjectStorageService ObjectStorageService { get; }
-    }
+        IBookmarkService BookmarkService { get; }
+        }
 }

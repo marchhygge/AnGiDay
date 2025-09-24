@@ -13,6 +13,7 @@ namespace AGD.Service.Services.Implement
         private IRestaurantService? _restaurantService;
         private IUserService? _userService;
         private IObjectStorageService? _objectStorageService;
+        private IBookmarkService? _bookmarkService;
 
         public ServicesProvider(IUnitOfWork unitOfWork, IOptions<GoogleIdTokenOptions> googleOptions, IOptions<R2Options> r2Options)
         {
@@ -23,5 +24,6 @@ namespace AGD.Service.Services.Implement
         public IRestaurantService RestaurantService => _restaurantService ??= new RestaurantService(_unitOfWork);
         public IUserService UserService => _userService ??= new UserService(_unitOfWork, _googleOptions);
         public IObjectStorageService ObjectStorageService => _objectStorageService ??= new R2StorageService(_r2Options);
+        public IBookmarkService BookmarkService => _bookmarkService ??= new BookmarkService(_unitOfWork);
     }
 }
