@@ -15,6 +15,7 @@ namespace AGD.Repositories.Repositories
         Task ExecuteInTransactionAsync(Func<CancellationToken, Task> action, CancellationToken ct = default);
         RestaurantRepository RestaurantRepository { get; }
         UserRepository UserRepository { get; }
+        BookmarkRepository BookmarkRepository { get; }
     }
 
     public class UnitOfWork : IUnitOfWork
@@ -25,6 +26,7 @@ namespace AGD.Repositories.Repositories
         private bool _disposed;
         private RestaurantRepository? _restaurantRepository;
         private UserRepository? _userRepository;
+        private BookmarkRepository? _bookmarkRepository;
 
         public UnitOfWork(JwtHelper jwtHelper, AnGiDayContext context)
         {
@@ -34,7 +36,7 @@ namespace AGD.Repositories.Repositories
 
         public RestaurantRepository RestaurantRepository => _restaurantRepository ??= new RestaurantRepository(_context);
         public UserRepository UserRepository => _userRepository ??= new UserRepository(_context);
-
+        public BookmarkRepository BookmarkRepository => _bookmarkRepository ??= new BookmarkRepository(_context);
         public JwtHelper JwtHelper => _jwtHelper;
 
         void IDisposable.Dispose()
