@@ -1,4 +1,5 @@
 ﻿using AGD.Repositories.Models;
+using AGD.Service.DTOs.Response;
 
 namespace AGD.Service.Services.Interfaces
 {
@@ -10,5 +11,9 @@ namespace AGD.Service.Services.Interfaces
         Task UpdateAsync(Restaurant entity, CancellationToken ct = default);
         Task DeleteAsync(int id, CancellationToken ct = default);
         IQueryable<Restaurant> GetRestaurantsByTags(List<int> tagIds);
+        IQueryable<Post> GetRestaurantPost(int resId);
+        IQueryable<SignatureFood> GetRestaurantFood(int resId);
+        IQueryable<FeedbackResponse> GetRestaurantFeedback(int resId);
+
     }
 }
