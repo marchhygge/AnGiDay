@@ -1,4 +1,5 @@
-﻿using AGD.Service.DTOs.Request;
+﻿using AGD.Repositories.Models;
+using AGD.Service.DTOs.Request;
 using AGD.Service.DTOs.Response;
 using Microsoft.AspNetCore.Http;
 
@@ -12,5 +13,7 @@ namespace AGD.Service.Services.Interfaces
         Task<UserProfileResponse?> UpdateUserAvatarAsync(int userId, IFormFile avatarFile, CancellationToken ct = default);
         Task TriggerEmailVerificationAsync(int userId, CancellationToken ct = default);
         Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default);
+        Task<LoginUserNameResponse> LoginWithUsernameAsync(LoginUserNameRequest request, CancellationToken ct = default);
+        Task<RegisterUserResponse> RegisterUserAsync(RegisterUserRequest request, CancellationToken ct = default);
     }
 }

@@ -1,4 +1,4 @@
-﻿using AGD.Repositories.ConfigurationModels;
+using AGD.Repositories.ConfigurationModels;
 using AGD.Repositories.Models;
 using AGD.Repositories.Repositories;
 using AGD.Service.DTOs.Request;
@@ -581,6 +581,81 @@ namespace AGD.Service.Services.Implement
             }
 
             return true;
+        }
+
+        public async Task<LoginUserNameResponse> LoginWithUsernameAsync(LoginUserNameRequest request, CancellationToken ct = default)
+        {
+            var user = await _unitOfWork.UserRepository.GetByUsernameAsync(request.username, ct);
+
+            if (user == null) throw new UnauthorizedAccessException("User account is not existed.");
+
+            bool isValidPassword = BCrypt.Net.BCrypt.Verify(request.password, user.PasswordHash);
+
+            if (!isValidPassword)
+            {
+                throw new UnauthorizedAccessException("Invalid Password");
+            }
+
+            if (user.Status != UserStatus.active) throw new UnauthorizedAccessException("User account is not active or banned.");
+
+            var jwt = _unitOfWork.JwtHelper.GenerateToken(user);
+
+            return new LoginUserNameResponse 
+            {
+                AccessToken = jwt,
+                TokenType = "Bearer",
+                UserId = user.Id,
+                Username = user.Username,
+                FullName = user.FullName,
+                RoleId = user.RoleId,
+                Email = user.Email,
+            };
+        }
+
+        public async Task<RegisterUserResponse> RegisterUserAsync(RegisterUserRequest request, CancellationToken ct = default)
+        {
+            var existedUsername = await _unitOfWork.UserRepository.GetByUsernameAsync(request.Username, ct);
+
+            if (existedUsername != null) throw new InvalidOperationException("Username already exists.");
+
+            var existedEmail = await _unitOfWork.UserRepository.GetByEmailAsync(request.Email, ct);
+
+            if(existedEmail != null) throw new InvalidOperationException("Email already exists.");
+
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            var newUser = new User
+            {
+                Username = request.Username,
+                Email = request.Email,
+                PasswordHash = passwordHash,
+                FullName = request.FullName,
+                PhoneNumber = request.PhoneNumber,
+                Gender = request.Gender,
+                DateOfBirth = request.DateOfBirth,
+                AvatarUrl = request.AvatarUrl,
+                RoleId = 1,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now,
+                IsDeleted = false
+            };
+
+            await _unitOfWork.UserRepository.CreateAsync(newUser, ct);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            return new RegisterUserResponse
+            {
+                Id = newUser.Id,
+                Username = newUser.Username,
+                Email = newUser.Email,
+                IsEmailVerified = newUser.IsEmailVerified,
+                FullName = newUser.FullName,
+                PhoneNumber = newUser.PhoneNumber,
+                Gender = newUser.Gender,
+                DateOfBirth = newUser.DateOfBirth,
+                AvatarUrl = newUser.AvatarUrl,
+                CreatedAt = newUser.CreatedAt ?? DateTime.Now
+            };
         }
 
         private async Task<string> GenerateUniqueUsernameAsync(string email, CancellationToken ct)

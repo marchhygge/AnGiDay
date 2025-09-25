@@ -3,6 +3,7 @@ using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
 using AGD.Service.Shared.Result;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -93,7 +94,6 @@ namespace AGD.API.Controllers
                                                   .FirstOrDefault()?.ErrorMessage ?? "Invalid request data";
                 return ApiResult<UserProfileResponse?>.FailResponse(firstError, 400);
             }
-
             try
             {
                 var updated = await _servicesProvider.UserService.UpdateUserProfileAsync(userId, request, ct);
@@ -109,6 +109,35 @@ namespace AGD.API.Controllers
             {
                 return ApiResult<UserProfileResponse?>.FailResponse(ex.Message, 409);
             }
+
+        [HttpPost("login-with-username")]
+        public async Task<ActionResult<ApiResult<LoginUserNameResponse>>> LoginWithUsername([FromBody] LoginUserNameRequest request, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(request.username) && string.IsNullOrWhiteSpace(request.password))
+            {
+                return ApiResult<LoginUserNameResponse>.FailResponse("Missing valid username and pasword");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.username))
+            {
+                return ApiResult<LoginUserNameResponse>.FailResponse("Missing username");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.password))
+            {
+                return ApiResult<LoginUserNameResponse>.FailResponse("Missing password");
+            }
+            try 
+            {
+                var user = await _servicesProvider.UserService.LoginWithUsernameAsync(request, ct);
+                return ApiResult<LoginUserNameResponse>.SuccessResponse(user, "Login success", 201);
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                Console.WriteLine(ex.Message);
+                return ApiResult<LoginUserNameResponse>.FailResponse("Token Login unauthorized.", 401);
+            }
+        }
         }
 
         [HttpPut("me/avatar")]
@@ -159,6 +188,21 @@ namespace AGD.API.Controllers
             if (!ok) return ApiResult<string>.FailResponse("Xác minh thất bại hoặc token hết hạn.", 400);
 
             return ApiResult<string>.SuccessResponse("Xác minh email thành công.");
+        }
+
+        [HttpPost("register")]
+        public async Task<ActionResult<ApiResult<RegisterUserResponse>>> Register([FromBody] RegisterUserRequest request, CancellationToken ct)
+        {
+            try
+            {
+                var res = await _servicesProvider.UserService.RegisterUserAsync(request, ct);
+                return ApiResult<RegisterUserResponse>.SuccessResponse(res, "Register successfully", 201);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return ApiResult<RegisterUserResponse>.FailResponse("Register fail");
+            }
         }
     }
 }
