@@ -19,12 +19,16 @@ namespace AGD.Repositories.Helpers
 
         public string GenerateToken(User user)
         {
+            var now = DateTime.UtcNow;
+            var jti  =  Guid.NewGuid().ToString("N");
+
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.FullName),
                 new Claim(ClaimTypes.Role, user.RoleId.ToString() ?? "user"),
+                new Claim(JwtRegisteredClaimNames.Jti, jti),
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
@@ -33,14 +37,34 @@ namespace AGD.Repositories.Helpers
             var token = new JwtSecurityToken(
                 issuer: _settings.Issuer,
                 audience: _settings.Audience,
+                notBefore: now,
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(_settings.ExpirationInMinutes),
+                expires: now.AddMinutes(_settings.ExpirationInMinutes),
                 signingCredentials: creds
             );
 
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
             Console.WriteLine($"Generated JWT: {jwt}");
             return jwt;
+        }
+
+        public (string? Jti, DateTime? ExpiresUtc) ReadJtiAndExpiry(string token)
+        {
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwt = handler.ReadJwtToken(token);
+                var jti = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)?.Value;
+                var exp = jwt.Payload.Expiration;
+                DateTime? expUtc = exp.HasValue
+                    ? DateTimeOffset.FromUnixTimeSeconds(exp.Value).UtcDateTime
+                    : null;
+                return (jti, expUtc);
+            }
+            catch
+            {
+                return (null, null);
+            }
         }
 
         public string GenerateTokenForGoogleLogin(User user)
@@ -50,7 +74,8 @@ namespace AGD.Repositories.Helpers
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new("username", user.Username),
-            new("role", user.RoleId.ToString() ?? "user")
+            new("role", user.RoleId.ToString() ?? "user"),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
         };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Key));
