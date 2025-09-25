@@ -109,6 +109,7 @@ namespace AGD.API.Controllers
             {
                 return ApiResult<UserProfileResponse?>.FailResponse(ex.Message, 409);
             }
+        }
 
         [HttpPost("login-with-username")]
         public async Task<ActionResult<ApiResult<LoginUserNameResponse>>> LoginWithUsername([FromBody] LoginUserNameRequest request, CancellationToken ct)
@@ -137,7 +138,6 @@ namespace AGD.API.Controllers
                 Console.WriteLine(ex.Message);
                 return ApiResult<LoginUserNameResponse>.FailResponse("Token Login unauthorized.", 401);
             }
-        }
         }
 
         [HttpPut("me/avatar")]
