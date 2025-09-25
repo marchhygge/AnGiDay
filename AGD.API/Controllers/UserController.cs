@@ -150,7 +150,7 @@ namespace AGD.API.Controllers
 
         [HttpGet("verify-email")]
         [AllowAnonymous]
-        public async Task<ActionResult<ApiResult<string>>> VerifyEmail([FromQuery] string token, CancellationToken ct = default)
+        public async Task<ActionResult<ApiResult<string>>> VerifyEmailLink([FromQuery] string token, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(token))
                 return ApiResult<string>.FailResponse("Token không hợp lệ.", 400);
