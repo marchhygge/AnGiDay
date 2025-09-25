@@ -1,5 +1,6 @@
 ﻿using AGD.Repositories.Models;
 using AGD.Repositories.Repositories;
+using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
 
 namespace AGD.Service.Services.Implement
@@ -48,6 +49,30 @@ namespace AGD.Service.Services.Implement
         public IQueryable<Restaurant> GetRestaurantsByTags(List<int> tagIds)
         {
             return _unitOfWork.RestaurantRepository.GetRestaurantsByTags(tagIds);
+        }
+
+        public IQueryable<Post> GetRestaurantPost(int resId)
+        {
+            return _unitOfWork.RestaurantRepository.GetRestaurantPost(resId);
+        }
+
+        public IQueryable<SignatureFood> GetRestaurantFood(int resId)
+        {
+            return _unitOfWork.RestaurantRepository.GetRestaurantFood(resId);
+        }
+
+        public IQueryable<FeedbackResponse> GetRestaurantFeedback(int resId)
+        {
+            return _unitOfWork.RestaurantRepository.GetRestaurantFeedback(resId)
+                .Select(p => new FeedbackResponse
+            {
+                Id = p.Id,
+                Content = p.Content,
+                ImageUrl = p.ImageUrl,
+                CreatedAt = p.CreatedAt,
+                UserName = p.User.Username,
+                SignatureFoodName = p.SignatureFood != null ? p.SignatureFood.Name : null
+            }); ;
         }
     }
 }
