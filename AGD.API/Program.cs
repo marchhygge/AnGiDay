@@ -1,4 +1,6 @@
-﻿using AGD.Repositories.ConfigurationModels;
+﻿using AGD.API.Extensions;
+using AGD.API.Middlewares;
+using AGD.Repositories.ConfigurationModels;
 using AGD.Repositories.DBContext;
 using AGD.Repositories.Helpers;
 using AGD.Repositories.Models;
@@ -150,6 +152,8 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddRedisAndServices(builder.Configuration);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -164,6 +168,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 app.UseHttpsRedirection();
+
+app.UseMiddleware<TokenBlacklistMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
