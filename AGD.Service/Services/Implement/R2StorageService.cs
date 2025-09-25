@@ -166,5 +166,10 @@ namespace AGD.Service.Services.Implement
             var etag = res.Headers.TryGetValues("ETag", out var vals) ? vals.FirstOrDefault()?.Trim('"') : null;
             return etag ?? string.Empty;
         }
+
+        public string GetBaseUrl()
+        {
+            return _options.BaseUrl;
+        }
     }
 }

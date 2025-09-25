@@ -10,5 +10,6 @@
         Task<IReadOnlyList<string>> ListAsync(string? prefix = null, int? maxKeys = null, CancellationToken ct = default);
         string GetPreSignedUploadUrl(string key, TimeSpan? expiresIn = null, string? contentType = null);
         string GetPreSignedDownloadUrl(string key, TimeSpan? expiresIn = null, string? downloadFileName = null, string? contentType = null);
+        string GetBaseUrl();
     }
 }
