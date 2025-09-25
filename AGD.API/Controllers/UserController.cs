@@ -2,7 +2,9 @@
 using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
 using AGD.Service.Shared.Result;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AGD.API.Controllers
 {
@@ -11,9 +13,18 @@ namespace AGD.API.Controllers
     public class UserController : ControllerBase
     {
         private readonly IServicesProvider _servicesProvider;
-        public UserController(IServicesProvider servicesProvider)
+        private readonly ILogger<UserController> _logger;
+        public UserController(IServicesProvider servicesProvider, ILogger<UserController> logger)
         {
             _servicesProvider = servicesProvider;
+            _logger = logger;
+        }
+
+        private bool TryGetUserId(out int userId)
+        {
+            userId = 0;
+            var id = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+            return int.TryParse(id, out userId);
         }
 
         [HttpPost("login-by-google-id-token")]
@@ -36,6 +47,7 @@ namespace AGD.API.Controllers
             }
             catch (Google.Apis.Auth.InvalidJwtException ex)
             {
+                _logger.LogError(ex, "Google ID token configuration/runtime error.");
                 return ApiResult<GoogleIdLoginResponse>.FailResponse($"Invalid Google ID Token: {ex.Message}", 401);
             }
             catch (InvalidOperationException ex)
@@ -43,6 +55,110 @@ namespace AGD.API.Controllers
                 Console.WriteLine(ex.Message);
                 return ApiResult<GoogleIdLoginResponse>.FailResponse("Google ID Token configuration error.", 500);
             }
+        }
+
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<ActionResult<ApiResult<UserProfileResponse?>>> GetMyProfile(CancellationToken ct = default)
+        {
+            if (!TryGetUserId(out int userId))
+            {
+                return ApiResult<UserProfileResponse?>.FailResponse("Unauthorized", 401);
+            }
+
+            var profile = await _servicesProvider.UserService.GetUserProfileAsync(userId, ct);
+            if (profile == null)
+                return ApiResult<UserProfileResponse?>.FailResponse("User not found", 404);
+
+            return ApiResult<UserProfileResponse?>.SuccessResponse(profile);
+        }
+
+        [HttpPut("me")]
+        [Authorize]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<ApiResult<UserProfileResponse?>>> UpdateMyProfile([FromForm] UpdateUserProfileRequest? request, CancellationToken ct = default)
+        {
+            if (!TryGetUserId(out int userId))
+                return ApiResult<UserProfileResponse?>.FailResponse("Unauthorized", 401);
+
+            if (request is null)
+                return ApiResult<UserProfileResponse?>.FailResponse("Request body is required.", 400);
+
+            if (request.DateOfBirth is { } dob && dob > DateOnly.FromDateTime(DateTime.UtcNow))
+                ModelState.AddModelError(nameof(request.DateOfBirth), "Date of birth cannot be in the future.");
+
+            if (!ModelState.IsValid)
+            {
+                var firstError = ModelState.Values.SelectMany(v => v.Errors)
+                                                  .FirstOrDefault()?.ErrorMessage ?? "Invalid request data";
+                return ApiResult<UserProfileResponse?>.FailResponse(firstError, 400);
+            }
+
+            try
+            {
+                var updated = await _servicesProvider.UserService.UpdateUserProfileAsync(userId, request, ct);
+                if (updated == null)
+                    return ApiResult<UserProfileResponse?>.FailResponse("User not found", 404);
+
+                var baseMsg = updated.IsProfileComplete ? "Updated" : "Updated (incomplete profile)";
+                if (!updated.IsEmailVerified)
+                    baseMsg += " - email verification pending";
+                return ApiResult<UserProfileResponse?>.SuccessResponse(updated, baseMsg);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResult<UserProfileResponse?>.FailResponse(ex.Message, 409);
+            }
+        }
+
+        [HttpPut("me/avatar")]
+        [Authorize]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(5_242_880)] // ~5MB
+        public async Task<ActionResult<ApiResult<UserProfileResponse?>>> UpdateMyAvatar([FromForm] UpdateAvatarRequest request, CancellationToken ct = default)
+        {
+            if (!TryGetUserId(out int userId))
+                return ApiResult<UserProfileResponse?>.FailResponse("Unauthorized", 401);
+
+            if (request.Avatar is null)
+                return ApiResult<UserProfileResponse?>.FailResponse("Avatar file is required.", 400);
+
+            try
+            {
+                var updated = await _servicesProvider.UserService.UpdateUserAvatarAsync(userId, request.Avatar, ct);
+                if (updated == null)
+                    return ApiResult<UserProfileResponse?>.FailResponse("User not found", 404);
+
+                return ApiResult<UserProfileResponse?>.SuccessResponse(updated, "Avatar updated");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResult<UserProfileResponse?>.FailResponse(ex.Message, 400);
+            }
+        }
+
+        [HttpPost("verify-email/send")]
+        [Authorize]
+        public async Task<ActionResult<ApiResult<string>>> SendVerifyEmail(CancellationToken ct = default)
+        {
+            if (!TryGetUserId(out var userId))
+                return ApiResult<string>.FailResponse("Unauthorized", 401);
+
+            await _servicesProvider.UserService.TriggerEmailVerificationAsync(userId, ct);
+            return ApiResult<string>.SuccessResponse("Đã gửi email xác minh (nếu email chưa được xác minh).");
+        }
+
+        [HttpGet("verify-email")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResult<string>>> VerifyEmail([FromQuery] string token, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+                return ApiResult<string>.FailResponse("Token không hợp lệ.", 400);
+
+            var ok = await _servicesProvider.UserService.VerifyEmailAsync(token, ct);
+            if (!ok) return ApiResult<string>.FailResponse("Xác minh thất bại hoặc token hết hạn.", 400);
+
+            return ApiResult<string>.SuccessResponse("Xác minh email thành công.");
         }
     }
 }
