@@ -3,11 +3,14 @@ using AGD.Repositories.DBContext;
 using AGD.Repositories.Helpers;
 using AGD.Repositories.Models;
 using AGD.Repositories.Repositories;
+using AGD.Service.Mapping;
 using AGD.Service.Services.Implement;
 using AGD.Service.Services.Interfaces;
+using AGD.Service.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
@@ -111,7 +114,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 //Mapper
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+//builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 builder.Services.AddSingleton<JwtHelper>();
