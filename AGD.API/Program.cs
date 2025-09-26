@@ -8,11 +8,9 @@ using AGD.Repositories.Repositories;
 using AGD.Service.Mapping;
 using AGD.Service.Services.Implement;
 using AGD.Service.Services.Interfaces;
-using AGD.Service.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
@@ -42,6 +40,7 @@ static IEdmModel GetEdmModel()
     var odataBuilder = new ODataConventionModelBuilder();
     var restaurants = odataBuilder.EntitySet<Restaurant>("Restaurants");
     odataBuilder.EntitySet<SignatureFood>("SignatureFoods");
+    odataBuilder.EntitySet<Post>("Posts");
     //khai báo navigation
     restaurants.EntityType.HasMany(r => r.SignatureFoods);
     return odataBuilder.GetEdmModel();
@@ -148,8 +147,10 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("1"));
-    options.AddPolicy("Require", policy => policy.RequireRole("User"));
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("4"));
+    options.AddPolicy("RequireEmployeeRole", policy => policy.RequireRole("3"));
+    options.AddPolicy("RequireUserRole", policy => policy.RequireRole("2"));
+    options.AddPolicy("RequireOwnerRole", policy => policy.RequireRole("1"));
 });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

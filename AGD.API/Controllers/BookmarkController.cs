@@ -28,6 +28,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpPost("post/{postId:int}")]
+        [Authorize(Roles = "2")]
         public async Task<ActionResult<ApiResult<string>>> AddPostBookmark([FromRoute] int postId, CancellationToken ct = default)
         {
             if (!TryGetUserId(out var userId))
@@ -43,6 +44,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpDelete("posts/{postId:int}")]
+        [Authorize(Roles = "2")]
         public async Task<ActionResult<ApiResult<string>>> RemovePostBookmark([FromRoute] int postId, CancellationToken ct = default)
         {
             if (!TryGetUserId(out var userId))
@@ -58,6 +60,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpPost("restaurants/{restaurantId:int}")]
+        [Authorize(Roles = "2")]
         public async Task<ActionResult<ApiResult<string>>> AddRestaurantBookmark([FromRoute] int restaurantId, CancellationToken ct)
         {
             if (!TryGetUserId(out var userId))
@@ -70,6 +73,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpDelete("restaurants/{restaurantId:int}")]
+        [Authorize(Roles = "2")]
         public async Task<ActionResult<ApiResult<string>>> RemoveRestaurantBookmark([FromRoute] int restaurantId, CancellationToken ct)
         {
             if (!TryGetUserId(out var userId))
@@ -82,6 +86,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpGet("posts")]
+        [Authorize(Roles = "2")]
         [EnableQuery(PageSize = 20, MaxNodeCount = 80)]
         public ActionResult<IQueryable<Post>> GetBookmarkedPosts()
         {
@@ -94,6 +99,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpGet("restaurants")]
+        [Authorize(Roles = "2")]
         [EnableQuery(PageSize = 20, MaxNodeCount = 80)]
         public ActionResult<IQueryable<Restaurant>> GetBookmarkedRestaurants()
         {
@@ -106,6 +112,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpGet("post/{postId:int}")]
+        [Authorize(Roles = "2")]
         public async Task<ActionResult<ApiResult<Bookmark?>>> GetPostBookmark([FromRoute] int postId, CancellationToken ct = default)
         {
             if (!TryGetUserId(out var userId))
@@ -117,6 +124,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpGet("restaurant/{restaurantId:int}")]
+        [Authorize(Roles = "2")]
         public async Task<ActionResult<ApiResult<Bookmark?>>> GetRestaurantBookmark([FromRoute] int restaurantId, CancellationToken ct = default)
         {
             if (!TryGetUserId(out var userId))
