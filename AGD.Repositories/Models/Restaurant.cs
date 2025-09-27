@@ -24,10 +24,6 @@ public partial class Restaurant
 
     public double Longitude { get; set; }
 
-    public decimal? AvgRating { get; set; }
-
-    public int? RatingCount { get; set; }
-
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
