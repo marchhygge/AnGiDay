@@ -35,6 +35,7 @@ public partial class AnGiDayContext : DbContext
     public virtual DbSet<Tag> Tags { get; set; }
     public virtual DbSet<User> Users { get; set; }
     public virtual DbSet<UserLocation> UserLocations { get; set; }
+    public virtual DbSet<UserPostInteraction> UserPostInteractions { get; set; }
     public virtual DbSet<UserRestaurantInteraction> UserRestaurantInteractions { get; set; }
     public virtual DbSet<UserTag> UserTags { get; set; }
     public virtual DbSet<WeatherLog> WeatherLogs { get; set; }
@@ -253,6 +254,9 @@ public partial class AnGiDayContext : DbContext
 
             entity.HasIndex(e => e.ConversationId, "idx_messages_conversation");
 
+            entity.HasIndex(e => new { e.ConversationId, e.CreatedAt }, "idx_messages_conversation_not_deleted")
+                    .HasFilter("is_deleted = false");
+
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ConversationId).IsRequired().HasColumnName("conversation_id");
             entity.Property(e => e.Sender).IsRequired().HasMaxLength(10).HasColumnName("sender");
@@ -262,6 +266,10 @@ public partial class AnGiDayContext : DbContext
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.IsDeleted).HasDefaultValue(false).IsRequired().HasColumnName("is_deleted");
+            entity.Property(e => e.Meta).HasColumnType("jsonb").HasColumnName("meta");
+            entity.Property(e => e.ModelName).HasColumnName("model_name");
+            entity.Property(e => e.TokensIn).HasColumnName("tokens_in");
+            entity.Property(e => e.TokensOut).HasColumnName("tokens_out");
 
             entity.HasOne(d => d.Conversation).WithMany(p => p.Messages)
                 .HasForeignKey(d => d.ConversationId)
@@ -370,7 +378,6 @@ public partial class AnGiDayContext : DbContext
             entity.Property(e => e.Type).IsRequired().HasMaxLength(20).HasColumnName("type");
             entity.Property(e => e.Content).IsRequired().HasColumnName("content");
             entity.Property(e => e.ImageUrl).HasMaxLength(255).HasColumnName("image_url");
-            entity.Property(e => e.Rating).HasColumnName("rating");
             entity.Property(e => e.SignatureFoodId).HasColumnName("signature_food_id");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("updated_at");
@@ -458,8 +465,6 @@ public partial class AnGiDayContext : DbContext
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValueSql("'active'::character varying").HasColumnName("status");
             entity.Property(e => e.Latitude).IsRequired().HasColumnName("latitude");
             entity.Property(e => e.Longitude).IsRequired().HasColumnName("longitude");
-            entity.Property(e => e.AvgRating).HasPrecision(3, 2).HasDefaultValueSql("0").HasColumnName("avg_rating");
-            entity.Property(e => e.RatingCount).HasDefaultValue(0).HasColumnName("rating_count");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("created_at");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("updated_at");
             entity.Property(e => e.IsDeleted).HasDefaultValue(false).IsRequired().HasColumnName("is_deleted");

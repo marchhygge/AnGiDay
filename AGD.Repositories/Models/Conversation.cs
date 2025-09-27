@@ -14,6 +14,12 @@ public partial class Conversation
 
     public bool IsDeleted { get; set; } = false;
 
+    public string Title { get; set; } = null!;
+
+    public string Summary { get; set; } = null!;
+
+    public int? SummaryTokenCount { get; set; }
+
     public virtual ICollection<Message> Messages { get; set; } = new List<Message>();
     [JsonIgnore]
     public virtual User User { get; set; } = null!;
