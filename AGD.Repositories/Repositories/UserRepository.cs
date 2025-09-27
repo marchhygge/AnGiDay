@@ -62,5 +62,39 @@ namespace AGD.Repositories.Repositories
 
             return query;
         }
+
+        public async Task<User?> GetUserByIdAsync(int userId, CancellationToken ct = default)
+        {
+            return await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsDeleted == false, ct);
+        }
+
+        public async Task<HealthProfile?> GetHealthProfileAsync(int userId, CancellationToken ct = default)
+        {
+            return await _context.HealthProfiles
+                .AsNoTracking()
+                .FirstOrDefaultAsync(h => h.UserId == userId && h.IsDeleted == false, ct);
+        }
+
+        public async Task<List<string>> GetUserTagNamesAsync(int userId, CancellationToken ct = default)
+        {
+            return await (from ut in _context.UserTags
+                          join t in _context.Tags on ut.TagId equals t.Id
+                          where ut.UserId == userId && (ut.IsDeleted == null || ut.IsDeleted == false) && (t.IsDeleted == false)
+                          select t.Name)
+                         .AsNoTracking()
+                         .ToListAsync(ct);
+        }
+
+        public async Task<UserLocation?> GetCurrentOrHomeLocationAsync(int userId, CancellationToken ct = default)
+        {
+            return await _context.UserLocations
+                .AsNoTracking()
+                .Where(ul => ul.UserId == userId && ul.IsDeleted == false)
+                .OrderByDescending(ul => ul.LocationType == "current")
+                .ThenByDescending(ul => ul.Id)
+                .FirstOrDefaultAsync(ct);
+        }
     }
 }

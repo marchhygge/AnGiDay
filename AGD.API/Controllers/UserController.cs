@@ -3,7 +3,6 @@ using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
 using AGD.Service.Shared.Result;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -26,6 +25,28 @@ namespace AGD.API.Controllers
             userId = 0;
             var id = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
             return int.TryParse(id, out userId);
+        }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            var auth = Request.Headers.Authorization.ToString();
+            if (string.IsNullOrWhiteSpace(auth) || !auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { error = "Missing bearer token" });
+
+            var token = auth["Bearer ".Length..].Trim();
+            var (jti, expUtc) = _servicesProvider.TokenService.ReadJtiAndExpiry(token);
+            if (jti == null || expUtc == null)
+                return BadRequest(new { error = "Invalid token" });
+
+            var now = DateTime.UtcNow;
+            var ttl = expUtc.Value - now;
+            if (ttl <= TimeSpan.Zero)
+                return Ok(new { message = "Token already expired" });
+
+            await _servicesProvider.TokenBlacklistService.AddAsync(jti, ttl);
+            return Ok(new { message = "Logged out" });
         }
 
         [HttpPost("login-by-google-id-token")]

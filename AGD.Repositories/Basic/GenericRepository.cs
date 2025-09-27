@@ -15,10 +15,6 @@ namespace AGD.DAL.Basic
             _dbSet = _context.Set<T>();
         }
 
-        //QuocThang: t bỏ AsNoTracking ở DBContext rồi nên t thêm asNoTracking vào đây
-        //mục đích là AsNoTracking ở DBContext sẽ dễ khiến cho db nó DbUpdateException
-        //nên t đưa vào đây để mấy cái query nó linh hoạt 1 tí, còn CancellationToken ct thì t để default để service nó gọi khỏi cần truyền
-
         public IQueryable<T> Query(bool asNoTracking = true)
         {
             return asNoTracking ? _dbSet.AsNoTracking() : _dbSet.AsQueryable();
@@ -29,8 +25,6 @@ namespace AGD.DAL.Basic
             return await (asNoTracking ? _dbSet.AsNoTracking() : _dbSet).ToListAsync(ct);
         }
 
-        //code cũ là dùng Guid vs string làm key, nhưng mà project mình xài int
-        //nên t đổi thành params object[] keyValues để sau này m có đi copy paste thì nó xài đc cho mọi thể loại luôn
         public async Task<T?> GetByIdAsync(CancellationToken ct = default, params object[] keyValues)
         {
             return await _dbSet.FindAsync(keyValues, ct).AsTask();

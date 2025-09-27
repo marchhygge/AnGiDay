@@ -1,4 +1,6 @@
-﻿namespace AGD.Service.Services.Interfaces
+﻿using AGD.Service.Integrations.Interfaces;
+
+namespace AGD.Service.Services.Interfaces
 {
     public interface IServicesProvider
     {
@@ -8,4 +10,9 @@
         IBookmarkService BookmarkService { get; }
         IPostService PostService { get; }
         }
+        ITokenBlacklistService TokenBlacklistService { get; }
+        ITokenService TokenService { get; }
+        IChatService ChatService { get; }
+        IWeatherProvider WeatherProvider { get; }
+    }
 }

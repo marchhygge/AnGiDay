@@ -16,8 +16,6 @@ public partial class Post
 
     public string? ImageUrl { get; set; }
 
-    public int? Rating { get; set; }
-
     public int? SignatureFoodId { get; set; }
 
     public DateTime? CreatedAt { get; set; }

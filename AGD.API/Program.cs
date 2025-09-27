@@ -1,16 +1,21 @@
-﻿using AGD.Repositories.ConfigurationModels;
+﻿using AGD.API.Extensions;
+using AGD.API.Middlewares;
+using AGD.Repositories.ConfigurationModels;
 using AGD.Repositories.DBContext;
 using AGD.Repositories.Helpers;
 using AGD.Repositories.Models;
 using AGD.Repositories.Repositories;
+using AGD.Service.Integrations;
+using AGD.Service.Integrations.Implements;
+using AGD.Service.Integrations.Interfaces;
 using AGD.Service.Mapping;
+using AGD.Service.Services.BackgroundServices;
 using AGD.Service.Services.Implement;
 using AGD.Service.Services.Interfaces;
-using AGD.Service.Shared;
+using AGD.Service.Services.Retrieval;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
@@ -19,6 +24,8 @@ using Npgsql;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true);
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
@@ -30,16 +37,20 @@ builder.Services.Configure<GoogleIdTokenOptions>(builder.Configuration.GetSectio
 builder.Services.Configure<R2Options>(builder.Configuration.GetSection("R2"));
 
 var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+var vectorCs = builder.Configuration.GetConnectionString("EmbeddingConnection");
 var dsb = new NpgsqlDataSourceBuilder(cs);
+var vectorDsb = new NpgsqlDataSourceBuilder(vectorCs);
 dsb.MapEnum<UserStatus>("user_status"); // hoặc "public.user_status"
 dsb.MapEnum<NotificationType>("notification_type");
 var dataSource = dsb.Build();
+var vectorDs = vectorDsb.Build();
 
 static IEdmModel GetEdmModel()
 {
     var odataBuilder = new ODataConventionModelBuilder();
     var restaurants = odataBuilder.EntitySet<Restaurant>("Restaurants");
     odataBuilder.EntitySet<SignatureFood>("SignatureFoods");
+    odataBuilder.EntitySet<Post>("Posts");
     //khai báo navigation
     restaurants.EntityType.HasMany(r => r.SignatureFoods);
     return odataBuilder.GetEdmModel();
@@ -54,13 +65,26 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
+
+builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 builder.Services.AddSingleton<JwtHelper>();
+builder.Services.AddSingleton<IWeatherProvider, OpenMeteoWeatherProvider>();
+builder.Services.AddSingleton<IObjectStorageService, R2StorageService>();
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IServicesProvider, ServicesProvider>();
 builder.Services.AddScoped<IRestaurantService, RestaurantService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBookmarkService, BookmarkService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IRestaurantRetrieval, RestaurantRetrieval>();
+builder.Services.AddScoped<IChatService, ChatService>();
+
+builder.Services.AddScoped<VectorRetrievalService>();
+builder.Services.AddScoped<ContextBuilder>();
+
+builder.Services.AddHostedService<EmbeddingIngestWorker>();
+
 builder.Services.AddScoped<IObjectStorageService, R2StorageService>();
 builder.Services.AddScoped<IPostService, PostService>();
 //Connect DB
@@ -71,11 +95,33 @@ builder.Services.AddDbContext<AnGiDayContext>(options =>
     options.EnableSensitiveDataLogging();
 });
 
+builder.Services.AddDbContext<AnGiDayVectorContext>(options =>
+{
+    options.UseNpgsql(vectorDs);
+    options.EnableDetailedErrors();
+    options.EnableSensitiveDataLogging();
+});
+
+builder.Services.AddHttpClient<OllamaClient>(c => c.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"]!));
+builder.Services.AddHttpClient<OllamaEmbeddingClient>(c => c.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"]!));
+builder.Services.AddHttpClient<OpenMeteoWeatherProvider>();
+
 builder.Services.AddControllers().AddOData(options =>
 {
     options.Select().Filter().OrderBy().Expand().SetMaxTop(100).Count();
     options.AddRouteComponents("odata", GetEdmModel());
 });
+
+var redisConn = builder.Configuration.GetSection("Redis")?.GetValue<string>("Configuration");
+if (string.IsNullOrWhiteSpace(redisConn))
+{
+    builder.Services.AddStackExchangeRedisCache(opt => opt.Configuration = redisConn);
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -118,9 +164,6 @@ builder.Services.AddSwaggerGen(options =>
 //builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
-builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
-builder.Services.AddSingleton<JwtHelper>();
-
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -147,13 +190,17 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("1"));
-    options.AddPolicy("Require", policy => policy.RequireRole("User"));
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("4"));
+    options.AddPolicy("RequireEmployeeRole", policy => policy.RequireRole("3"));
+    options.AddPolicy("RequireUserRole", policy => policy.RequireRole("2"));
+    options.AddPolicy("RequireOwnerRole", policy => policy.RequireRole("1"));
 });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddRedisAndServices(builder.Configuration);
 
 var app = builder.Build();
 
@@ -169,6 +216,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 app.UseHttpsRedirection();
+
+app.UseMiddleware<TokenBlacklistMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

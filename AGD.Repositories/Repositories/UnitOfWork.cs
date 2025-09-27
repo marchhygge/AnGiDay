@@ -1,6 +1,7 @@
 ﻿using AGD.Repositories.DBContext;
 using AGD.Repositories.Helpers;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 
 namespace AGD.Repositories.Repositories
 {
@@ -17,29 +18,40 @@ namespace AGD.Repositories.Repositories
         UserRepository UserRepository { get; }
         BookmarkRepository BookmarkRepository { get; }
         PostRepository PostRepository { get; }
+        EmbeddingRepository EmbeddingRepository { get; }
+        ConversationRepository ConversationRepository { get; }
+        MessageRepository MessageRepository { get; }
     }
 
     public class UnitOfWork : IUnitOfWork
     {
         private readonly AnGiDayContext _context;
         private readonly JwtHelper _jwtHelper;
+        private readonly string _vectorConnection;
         private IDbContextTransaction? _transaction;
         private bool _disposed;
         private RestaurantRepository? _restaurantRepository;
         private UserRepository? _userRepository;
         private BookmarkRepository? _bookmarkRepository;
         private PostRepository? _postRepository;
+        private EmbeddingRepository? _embeddingRepository;
+        private ConversationRepository? _conversationRepository;
+        private MessageRepository? _messageRepository;
 
-        public UnitOfWork(JwtHelper jwtHelper, AnGiDayContext context)
+        public UnitOfWork(JwtHelper jwtHelper, AnGiDayContext context, IConfiguration configuration)
         {
             _jwtHelper = jwtHelper;
             _context = context;
+            _vectorConnection = configuration.GetConnectionString("EmbeddingConnection") ?? throw new ArgumentNullException("Vector database connection string is not configured.");
         }
 
         public RestaurantRepository RestaurantRepository => _restaurantRepository ??= new RestaurantRepository(_context);
         public UserRepository UserRepository => _userRepository ??= new UserRepository(_context);
         public BookmarkRepository BookmarkRepository => _bookmarkRepository ??= new BookmarkRepository(_context);
         public PostRepository PostRepository => _postRepository ??= new PostRepository(_context);
+        public EmbeddingRepository EmbeddingRepository => _embeddingRepository ??= new EmbeddingRepository(_vectorConnection);
+        public ConversationRepository ConversationRepository => _conversationRepository ??= new ConversationRepository(_context);
+        public MessageRepository MessageRepository => _messageRepository ??= new MessageRepository(_context);
         public JwtHelper JwtHelper => _jwtHelper;
 
         void IDisposable.Dispose()
