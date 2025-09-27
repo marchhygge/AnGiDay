@@ -14,9 +14,9 @@ public partial class Conversation
 
     public bool IsDeleted { get; set; } = false;
 
-    public string Title { get; set; } = null!;
+    public string? Title { get; set; }
 
-    public string Summary { get; set; } = null!;
+    public string? Summary { get; set; }
 
     public int? SummaryTokenCount { get; set; }
 
