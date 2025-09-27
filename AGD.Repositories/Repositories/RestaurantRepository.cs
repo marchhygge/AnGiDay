@@ -45,11 +45,10 @@ namespace AGD.Repositories.Repositories
             return query;
         }
 
-        public IQueryable<Restaurant> GetRestaurantsByTags(List<int> tagId)
+        public async Task<IEnumerable<Restaurant>> GetRestaurantsByTags(List<int> tagId, CancellationToken ct)
         {
-            IQueryable<Restaurant> query = _context.Restaurants.AsNoTracking()
-                .Where(rt => !rt.IsDeleted)
-                .AsQueryable();
+            var query = _context.Restaurants.AsNoTracking()
+                .Where(rt => !rt.IsDeleted);
 
             if (tagId != null && tagId.Count != 0)
             {
@@ -57,19 +56,12 @@ namespace AGD.Repositories.Repositories
                     r.RestaurantTags.Any(rt => tagId.Contains(rt.TagId)));
             }
 
-            return query;
+            return await query.ToListAsync(ct);
         }
 
-        public IQueryable<Post> GetRestaurantPost(int resId)
+        public async Task<IEnumerable<SignatureFood>> GetRestaurantFood(int resId, CancellationToken ct)
         {
-            IQueryable<Post> query = _context.Posts.AsNoTracking().Where(p => p.RestaurantId == resId && !p.IsDeleted && p.Type.Equals("owner_post")).AsQueryable();
-
-            return query;
-        }
-
-        public IQueryable<SignatureFood> GetRestaurantFood(int resId)
-        {
-            IQueryable<SignatureFood> query = _context.SignatureFoods.AsNoTracking().Where(f => f.RestaurantId == resId && !f.IsDeleted).AsQueryable();
+            var query = await _context.SignatureFoods.AsNoTracking().Where(f => f.RestaurantId == resId && !f.IsDeleted).ToListAsync(ct);
 
             return query;
         }

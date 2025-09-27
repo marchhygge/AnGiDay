@@ -33,6 +33,7 @@ namespace AGD.Service.Services.Implement
         private IUserService? _userService;
         private IObjectStorageService? _objectStorageService;
         private IBookmarkService? _bookmarkService;
+        private IPostService? _postService;
         private ITokenBlacklistService? _tokenBlacklistService;
         private ITokenService? _tokenService;
         private IChatService? _chatService;
@@ -72,6 +73,7 @@ namespace AGD.Service.Services.Implement
         public IObjectStorageService ObjectStorageService => _objectStorageService ??= new R2StorageService(_r2Options);
         public IUserService UserService => _userService ??= new UserService(_unitOfWork, _googleOptions, _emailService, _jwtOptions, _objectStorageService!);
         public IBookmarkService BookmarkService => _bookmarkService ??= new BookmarkService(_unitOfWork);
+        public IPostService PostService => _postService ??= new PostService(_unitOfWork);
         public ITokenBlacklistService TokenBlacklistService => _tokenBlacklistService ??= new RedisTokenBlacklistService(_connectionMultiplexer);
         public ITokenService TokenService => _tokenService ??= new TokenService(_unitOfWork.JwtHelper);
         public IWeatherProvider WeatherProvider => _weatherProvider ??= new OpenMeteoWeatherProvider(_httpClient, _distributedCache, _logger);
