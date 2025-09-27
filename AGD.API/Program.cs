@@ -85,6 +85,8 @@ builder.Services.AddScoped<ContextBuilder>();
 
 builder.Services.AddHostedService<EmbeddingIngestWorker>();
 
+builder.Services.AddScoped<IObjectStorageService, R2StorageService>();
+builder.Services.AddScoped<IPostService, PostService>();
 //Connect DB
 builder.Services.AddDbContext<AnGiDayContext>(options =>
 {

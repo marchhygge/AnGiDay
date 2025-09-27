@@ -46,33 +46,14 @@ namespace AGD.Service.Services.Implement
             await _unitOfWork.SaveChangesAsync(ct);
         }
 
-        public IQueryable<Restaurant> GetRestaurantsByTags(List<int> tagIds)
+        public async Task<IEnumerable<Restaurant>> GetRestaurantsByTags(List<int> tagIds, CancellationToken ct = default)
         {
-            return _unitOfWork.RestaurantRepository.GetRestaurantsByTags(tagIds);
+            return await _unitOfWork.RestaurantRepository.GetRestaurantsByTags(tagIds, ct);
         }
 
-        public IQueryable<Post> GetRestaurantPost(int resId)
+        public async Task<IEnumerable<SignatureFood>> GetRestaurantFood(int resId, CancellationToken ct = default)
         {
-            return _unitOfWork.RestaurantRepository.GetRestaurantPost(resId);
-        }
-
-        public IQueryable<SignatureFood> GetRestaurantFood(int resId)
-        {
-            return _unitOfWork.RestaurantRepository.GetRestaurantFood(resId);
-        }
-
-        public IQueryable<FeedbackResponse> GetRestaurantFeedback(int resId)
-        {
-            return _unitOfWork.RestaurantRepository.GetRestaurantFeedback(resId)
-                .Select(p => new FeedbackResponse
-            {
-                Id = p.Id,
-                Content = p.Content,
-                ImageUrl = p.ImageUrl,
-                CreatedAt = p.CreatedAt,
-                UserName = p.User.Username,
-                SignatureFoodName = p.SignatureFood != null ? p.SignatureFood.Name : null
-            }); ;
-        }
+            return await _unitOfWork.RestaurantRepository.GetRestaurantFood(resId, ct);
+        }        
     }
 }

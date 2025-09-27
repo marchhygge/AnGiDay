@@ -53,6 +53,16 @@ namespace AGD.Repositories.Repositories
             return (postCount, restaurantBookmarkCount, postBookmarkCount, ownedRestaurantCount);
         }
 
+        public async Task<IEnumerable<Post>> GetCommunityPost(CancellationToken ct = default)
+        {
+            var query = await _context.Posts.AsNoTracking()
+                .Where(p => !p.IsDeleted && p.Type.Equals("community_post"))
+                .Include(p => p.User)
+                .ToListAsync(ct);
+
+            return query;
+        }
+
         public async Task<User?> GetUserByIdAsync(int userId, CancellationToken ct = default)
         {
             return await _context.Users

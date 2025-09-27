@@ -8,6 +8,8 @@ namespace AGD.Service.Services.Interfaces
         IUserService UserService { get; }
         IObjectStorageService ObjectStorageService { get; }
         IBookmarkService BookmarkService { get; }
+        IPostService PostService { get; }
+        }
         ITokenBlacklistService TokenBlacklistService { get; }
         ITokenService TokenService { get; }
         IChatService ChatService { get; }

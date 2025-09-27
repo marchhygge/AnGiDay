@@ -15,5 +15,6 @@ namespace AGD.Service.Services.Interfaces
         Task<bool> VerifyEmailAsync(string token, CancellationToken ct = default);
         Task<LoginUserNameResponse> LoginWithUsernameAsync(LoginUserNameRequest request, CancellationToken ct = default);
         Task<RegisterUserResponse> RegisterUserAsync(RegisterUserRequest request, CancellationToken ct = default);
+        Task<IEnumerable<CommunityPostResponse>> GetCommunityPost(CancellationToken ct = default);
     }
 }
