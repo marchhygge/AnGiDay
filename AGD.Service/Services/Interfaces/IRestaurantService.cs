@@ -10,10 +10,10 @@ namespace AGD.Service.Services.Interfaces
         Task<int> CreateAsync(Restaurant entity, CancellationToken ct = default);
         Task UpdateAsync(Restaurant entity, CancellationToken ct = default);
         Task DeleteAsync(int id, CancellationToken ct = default);
-        IQueryable<Restaurant> GetRestaurantsByTags(List<int> tagIds);
-        IQueryable<Post> GetRestaurantPost(int resId);
-        IQueryable<SignatureFood> GetRestaurantFood(int resId);
-        IQueryable<FeedbackResponse> GetRestaurantFeedback(int resId);
+        Task<IEnumerable<Restaurant>> GetRestaurantsByTags(List<int> tagIds, CancellationToken ct = default);
+        //IQueryable<Post> GetRestaurantPost(int resId);
+        Task<IEnumerable<SignatureFood>> GetRestaurantFood(int resId, CancellationToken ct = default);
+        //Task<IEnumerable<FeedbackResponse>> GetRestaurantFeedback(int resId, CancellationToken ct = default);
 
     }
 }

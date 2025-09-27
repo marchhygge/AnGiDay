@@ -1,4 +1,5 @@
 ﻿using AGD.Repositories.Models;
+using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
 using AGD.Service.Shared.Result;
 using Microsoft.AspNetCore.Mvc;
@@ -25,10 +26,9 @@ namespace AGD.API.Controllers
         }
 
         [HttpGet("filter-restaurant")]
-        [EnableQuery(PageSize = 20, MaxNodeCount = 80)]
-        public IQueryable<Restaurant> GetRestaurantsByTags([FromQuery] List<int> tagIds)
+        public Task<IEnumerable<Restaurant>> GetRestaurantsByTags([FromQuery] List<int> tagIds, CancellationToken ct)
         {
-            return _servicesProvider.RestaurantService.GetRestaurantsByTags(tagIds);
+            return _servicesProvider.RestaurantService.GetRestaurantsByTags(tagIds, ct);
         }
 
         [HttpGet("{id}")]
@@ -44,46 +44,17 @@ namespace AGD.API.Controllers
             return ApiResult<Restaurant?>.SuccessResponse(res);
         }
 
-        [HttpGet("posts/{restaurantId:int}")]
-        public async Task<ActionResult<IQueryable<Post>>> GetRestaurantPost([FromRoute] int restaurantId, CancellationToken ct = default)
-        {
-            var res = await _servicesProvider.RestaurantService.GetAsync(restaurantId, ct);
-
-            if (res == null)
-            {
-                return BadRequest("Restaurant not exist");
-            }
-            return Ok(_servicesProvider.RestaurantService.GetRestaurantPost(restaurantId));
-       
-        }
-
         [HttpGet("signaturefood/{restaurantId:int}")]
-        public async Task<ActionResult<IQueryable<Post>>> GetRestaurantFood([FromRoute] int restaurantId, CancellationToken ct = default)
+        public async Task<ActionResult<ApiResult<IEnumerable<SignatureFood?>>>> GetRestaurantFood([FromRoute] int restaurantId, CancellationToken ct = default)
         {
             var res = await _servicesProvider.RestaurantService.GetAsync(restaurantId, ct);
 
             if (res == null)
             {
-                return BadRequest("Restaurant not exist");
+                return ApiResult<IEnumerable<SignatureFood?>>.FailResponse("Restaurant not exist");
             }
-            return Ok(_servicesProvider.RestaurantService.GetRestaurantFood(restaurantId));
+            var food = await _servicesProvider.RestaurantService.GetRestaurantFood(restaurantId, ct);
+            return ApiResult<IEnumerable<SignatureFood?>>.SuccessResponse(food);
         }
-
-        [HttpGet("feedback/{restaurantId:int}")]
-        public async Task<ActionResult<IQueryable<Post>>> GetRestaurantFeedback([FromRoute] int restaurantId, CancellationToken ct = default)
-        {
-            var res = await _servicesProvider.RestaurantService.GetAsync(restaurantId, ct);
-
-            if (res == null)
-            {
-                return BadRequest("Restaurant not exist");
-            }
-
-            var feedback = _servicesProvider.RestaurantService.GetRestaurantFeedback(restaurantId);
-            return Ok(feedback);
-        }
-
-
-
     }
 }

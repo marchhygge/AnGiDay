@@ -62,6 +62,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBookmarkService, BookmarkService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IObjectStorageService, R2StorageService>();
+builder.Services.AddScoped<IPostService, PostService>();
 //Connect DB
 builder.Services.AddDbContext<AnGiDayContext>(options =>
 {

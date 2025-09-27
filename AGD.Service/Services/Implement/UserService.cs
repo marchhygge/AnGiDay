@@ -13,6 +13,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace AGD.Service.Services.Implement
 {
@@ -674,6 +675,30 @@ namespace AGD.Service.Services.Implement
                 candidate = $"{cleaned}{i}";
             }
             return candidate;
+        }
+
+        public async Task<IEnumerable<CommunityPostResponse>> GetCommunityPost(CancellationToken ct = default)
+        {
+            var post = await _unitOfWork.UserRepository.GetCommunityPost(ct);
+            return post.Select(p => new CommunityPostResponse
+                {
+                    Id = p.Id,
+
+                    UserId = p.UserId,
+
+                    Type = p.Type,
+
+                    Content = p.Content,
+
+                    ImageUrl = p.ImageUrl,
+
+                    CreatedAt = p.CreatedAt,
+
+                    UpdatedAt = p.UpdatedAt,
+
+                    IsDeleted = p.IsDeleted,
+                    Username = p.User.Username,
+                });
         }
     }
 }

@@ -6,5 +6,6 @@
         IUserService UserService { get; }
         IObjectStorageService ObjectStorageService { get; }
         IBookmarkService BookmarkService { get; }
+        IPostService PostService { get; }
         }
 }

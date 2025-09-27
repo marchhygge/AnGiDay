@@ -16,6 +16,7 @@ namespace AGD.Repositories.Repositories
         RestaurantRepository RestaurantRepository { get; }
         UserRepository UserRepository { get; }
         BookmarkRepository BookmarkRepository { get; }
+        PostRepository PostRepository { get; }
     }
 
     public class UnitOfWork : IUnitOfWork
@@ -27,6 +28,7 @@ namespace AGD.Repositories.Repositories
         private RestaurantRepository? _restaurantRepository;
         private UserRepository? _userRepository;
         private BookmarkRepository? _bookmarkRepository;
+        private PostRepository? _postRepository;
 
         public UnitOfWork(JwtHelper jwtHelper, AnGiDayContext context)
         {
@@ -37,6 +39,7 @@ namespace AGD.Repositories.Repositories
         public RestaurantRepository RestaurantRepository => _restaurantRepository ??= new RestaurantRepository(_context);
         public UserRepository UserRepository => _userRepository ??= new UserRepository(_context);
         public BookmarkRepository BookmarkRepository => _bookmarkRepository ??= new BookmarkRepository(_context);
+        public PostRepository PostRepository => _postRepository ??= new PostRepository(_context);
         public JwtHelper JwtHelper => _jwtHelper;
 
         void IDisposable.Dispose()

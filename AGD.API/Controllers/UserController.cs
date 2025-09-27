@@ -191,7 +191,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult<ApiResult<RegisterUserResponse>>> Register([FromBody] RegisterUserRequest request, CancellationToken ct)
+        public async Task<ApiResult<RegisterUserResponse>> Register([FromBody] RegisterUserRequest request, CancellationToken ct)
         {
             try
             {
@@ -203,6 +203,20 @@ namespace AGD.API.Controllers
                 Console.WriteLine(ex.Message);
                 return ApiResult<RegisterUserResponse>.FailResponse("Register fail");
             }
+        }
+
+        [HttpGet("community/post")]
+        [AllowAnonymous]
+        public async Task<ApiResult<IEnumerable<CommunityPostResponse>>> GetCommunityPost(CancellationToken ct)
+        {
+            var post = await _servicesProvider.UserService.GetCommunityPost(ct);
+
+            if(post == null)
+            {
+                return ApiResult<IEnumerable<CommunityPostResponse>>.FailResponse("Post in community is empty");
+            }
+
+            return ApiResult<IEnumerable<CommunityPostResponse>>.SuccessResponse(post);
         }
     }
 }
