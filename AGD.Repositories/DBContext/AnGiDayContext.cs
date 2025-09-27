@@ -175,25 +175,29 @@ public partial class AnGiDayContext : DbContext
         modelBuilder.Entity<Conversation>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("conversations_pkey");
+
             entity.ToTable("conversations");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.UserId).IsRequired().HasColumnName("user_id");
-            entity.Property(e => e.StartedAt)
-                .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("started_at");
             entity.Property(e => e.EndedAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("ended_at");
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValue(false)
-                .IsRequired()
                 .HasColumnName("is_deleted");
+            entity.Property(e => e.StartedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("started_at");
+            entity.Property(e => e.Summary).HasColumnName("summary");
+            entity.Property(e => e.SummaryTokenCount)
+                .HasDefaultValue(0)
+                .HasColumnName("summary_token_count");
+            entity.Property(e => e.Title).HasColumnName("title");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.User).WithMany(p => p.Conversations)
                 .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("conversations_user_id_fkey");
         });
 
@@ -250,30 +254,38 @@ public partial class AnGiDayContext : DbContext
         modelBuilder.Entity<Message>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("messages_pkey");
+
             entity.ToTable("messages");
 
             entity.HasIndex(e => e.ConversationId, "idx_messages_conversation");
 
-            entity.HasIndex(e => new { e.ConversationId, e.CreatedAt }, "idx_messages_conversation_not_deleted")
-                    .HasFilter("is_deleted = false");
+            entity.HasIndex(e => new { e.ConversationId, e.CreatedAt }, "idx_messages_conversation_not_deleted").HasFilter("(is_deleted = false)");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.ConversationId).IsRequired().HasColumnName("conversation_id");
-            entity.Property(e => e.Sender).IsRequired().HasMaxLength(10).HasColumnName("sender");
-            entity.Property(e => e.Content).IsRequired().HasColumnName("content");
+            entity.Property(e => e.Content)
+                .IsRequired()
+                .HasColumnName("content");
+            entity.Property(e => e.ConversationId).HasColumnName("conversation_id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_at");
-            entity.Property(e => e.IsDeleted).HasDefaultValue(false).IsRequired().HasColumnName("is_deleted");
-            entity.Property(e => e.Meta).HasColumnType("jsonb").HasColumnName("meta");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.Meta)
+                .HasColumnType("jsonb")
+                .HasColumnName("meta");
             entity.Property(e => e.ModelName).HasColumnName("model_name");
+            entity.Property(e => e.Sender)
+                .IsRequired()
+                .HasMaxLength(10)
+                .HasColumnName("sender");
             entity.Property(e => e.TokensIn).HasColumnName("tokens_in");
             entity.Property(e => e.TokensOut).HasColumnName("tokens_out");
 
             entity.HasOne(d => d.Conversation).WithMany(p => p.Messages)
                 .HasForeignKey(d => d.ConversationId)
-                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("messages_conversation_id_fkey");
         });
 

@@ -39,7 +39,7 @@ namespace AGD.Service.Services.Implement
             var conv = new Conversation
             {
                 UserId = userId,
-                StartedAt = DateTime.UtcNow,
+                StartedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
                 IsDeleted = false
             };
 
@@ -58,12 +58,22 @@ namespace AGD.Service.Services.Implement
             var conv = await _unitOfWork.ConversationRepository.GetByIdForUserAsync(conversationId, userId, ct)
                        ?? throw new UnauthorizedAccessException("Conversation not found or not owned by user");
 
+            var forbiddenKeywords = new[] { "nội tạng", "cơ thể", "lịch sử", "toán học", "vật lý", "hóa học", "sinh học", "chính trị", "bóng đá", "bóng rổ", "bóng chuyền", "bài hát", "âm nhạc", "phim", "diễn viên", "ca sĩ", "giải trí", "tình yêu", "tâm lý", "khoa học", "công nghệ", "máy tính", "lập trình", "phần mềm", "phần cứng", "điện thoại", "xe hơi", "xe máy", "du lịch", "địa lý", "lịch sử thế giới", "chiến tranh", "tôn giáo", "triết học" };
+            if (forbiddenKeywords.Any(k => userMessage.Contains(k, StringComparison.OrdinalIgnoreCase)))
+            {
+                return new ChatResponseDTO(
+                    conversationId,
+                    new MessageDTO(0, "user", userMessage, DateTime.UtcNow),
+                    new MessageDTO(0, "assistant", "Xin lỗi, tôi chỉ hỗ trợ các câu hỏi về ăn uống và nhà hàng trong hệ thống AnGiDay.", DateTime.UtcNow)
+                );
+            }
+
             var userMsg = new Message
             {
                 ConversationId = conversationId,
                 Sender = "user",
                 Content = userMessage,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
                 IsDeleted = false
             };
             userMsg = await _unitOfWork.MessageRepository.AddAsync(userMsg, ct);
@@ -108,7 +118,7 @@ namespace AGD.Service.Services.Implement
                 ConversationId = conversationId,
                 Sender = "AI",
                 Content = assistantText,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
                 IsDeleted = false,
                 ModelName = model,
                 Meta = JsonSerializer.Serialize(new { candidates = restaurants.Take(5).Select(r => r.Name) })

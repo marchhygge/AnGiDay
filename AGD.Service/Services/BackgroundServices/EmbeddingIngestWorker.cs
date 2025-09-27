@@ -73,6 +73,11 @@ namespace AGD.Service.Services.BackgroundServices
                             continue;
                         }
 
+                        if (vec == null || vec.Length != 768)
+                        {
+                            _logger.LogWarning("Embedding for restaurant {Id} is invalid (null or not 768 dims), skip upsert.", r.Id);
+                            continue;
+                        }
                         try
                         {
                             await _unitOfWork.EmbeddingRepository.UpsertRestaurantEmbeddingAsync(r.Id, vec, embedModel, stoppingToken);
