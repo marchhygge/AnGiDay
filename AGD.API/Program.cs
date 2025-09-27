@@ -5,9 +5,14 @@ using AGD.Repositories.DBContext;
 using AGD.Repositories.Helpers;
 using AGD.Repositories.Models;
 using AGD.Repositories.Repositories;
+using AGD.Service.Integrations;
+using AGD.Service.Integrations.Implements;
+using AGD.Service.Integrations.Interfaces;
 using AGD.Service.Mapping;
+using AGD.Service.Services.BackgroundServices;
 using AGD.Service.Services.Implement;
 using AGD.Service.Services.Interfaces;
+using AGD.Service.Services.Retrieval;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +25,8 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true);
+
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
@@ -30,10 +37,13 @@ builder.Services.Configure<GoogleIdTokenOptions>(builder.Configuration.GetSectio
 builder.Services.Configure<R2Options>(builder.Configuration.GetSection("R2"));
 
 var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+var vectorCs = builder.Configuration.GetConnectionString("EmbeddingConnection");
 var dsb = new NpgsqlDataSourceBuilder(cs);
+var vectorDsb = new NpgsqlDataSourceBuilder(vectorCs);
 dsb.MapEnum<UserStatus>("user_status"); // hoặc "public.user_status"
 dsb.MapEnum<NotificationType>("notification_type");
 var dataSource = dsb.Build();
+var vectorDs = vectorDsb.Build();
 
 static IEdmModel GetEdmModel()
 {
@@ -55,14 +65,26 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
+
+builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 builder.Services.AddSingleton<JwtHelper>();
+builder.Services.AddSingleton<IWeatherProvider, OpenMeteoWeatherProvider>();
+builder.Services.AddSingleton<IObjectStorageService, R2StorageService>();
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IServicesProvider, ServicesProvider>();
 builder.Services.AddScoped<IRestaurantService, RestaurantService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBookmarkService, BookmarkService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IObjectStorageService, R2StorageService>();
+builder.Services.AddScoped<IRestaurantRetrieval, RestaurantRetrieval>();
+builder.Services.AddScoped<IChatService, ChatService>();
+
+builder.Services.AddScoped<VectorRetrievalService>();
+builder.Services.AddScoped<ContextBuilder>();
+
+builder.Services.AddHostedService<EmbeddingIngestWorker>();
+
 //Connect DB
 builder.Services.AddDbContext<AnGiDayContext>(options =>
 {
@@ -71,11 +93,33 @@ builder.Services.AddDbContext<AnGiDayContext>(options =>
     options.EnableSensitiveDataLogging();
 });
 
+builder.Services.AddDbContext<AnGiDayVectorContext>(options =>
+{
+    options.UseNpgsql(vectorDs);
+    options.EnableDetailedErrors();
+    options.EnableSensitiveDataLogging();
+});
+
+builder.Services.AddHttpClient<OllamaClient>(c => c.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"]!));
+builder.Services.AddHttpClient<OllamaEmbeddingClient>(c => c.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"]!));
+builder.Services.AddHttpClient<OpenMeteoWeatherProvider>();
+
 builder.Services.AddControllers().AddOData(options =>
 {
     options.Select().Filter().OrderBy().Expand().SetMaxTop(100).Count();
     options.AddRouteComponents("odata", GetEdmModel());
 });
+
+var redisConn = builder.Configuration.GetSection("Redis")?.GetValue<string>("Configuration");
+if (string.IsNullOrWhiteSpace(redisConn))
+{
+    builder.Services.AddStackExchangeRedisCache(opt => opt.Configuration = redisConn);
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -117,9 +161,6 @@ builder.Services.AddSwaggerGen(options =>
 //Mapper
 //builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
-
-builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
-builder.Services.AddSingleton<JwtHelper>();
 
 builder.Services.AddAuthentication(options =>
 {

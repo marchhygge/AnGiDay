@@ -1,12 +1,12 @@
 ﻿{
    "CodeGenerationMode": 4,
-   "ContextClassName": "AnGiDayContext",
+   "ContextClassName": "AnGiDayVectorContext",
    "ContextNamespace": null,
    "FilterSchemas": false,
    "IncludeConnectionString": true,
    "ModelNamespace": null,
    "OutputContextPath": null,
-   "OutputPath": "Models",
+   "OutputPath": "VectorModels",
    "PreserveCasingWithRegex": true,
    "ProjectRootNamespace": "AGD.Repositories",
    "Schemas": null,
@@ -15,112 +15,12 @@
    "T4TemplatePath": null,
    "Tables": [
       {
-         "Name": "public.bookmarks",
+         "Name": "public.restaurant_embeddings",
          "ObjectType": 0
       },
       {
-         "Name": "public.categories",
+         "Name": "public.signature_food_embeddings",
          "ObjectType": 0
-      },
-      {
-         "Name": "public.comments",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.conversations",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.health_profiles",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.likes",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.messages",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.notification_users",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.notifications",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.post_tags",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.posts",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.reports",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.restaurant_branches",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.restaurant_tags",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.restaurants",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.roles",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.signature_foods",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.tags",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.user_locations",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.user_restaurant_interactions",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.user_tags",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.users",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.weather_logs",
-         "ObjectType": 0
-      },
-      {
-         "Name": "public.create_welcome_conversation_on_user_insert",
-         "ObjectType": 1
-      },
-      {
-         "Name": "public.enforce_single_current_location",
-         "ObjectType": 1
-      },
-      {
-         "Name": "public.set_updated_at",
-         "ObjectType": 1
-      },
-      {
-         "Name": "public.update_conversation_ended_at_on_message_insert",
-         "ObjectType": 1
       }
    ],
    "UiHint": null,
