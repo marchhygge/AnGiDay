@@ -238,7 +238,10 @@ public partial class AnGiDayContext : DbContext
                 .HasDefaultValueSql("now()")
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_at");
-            entity.Property(e => e.IsDeleted).HasDefaultValue(false).IsRequired().HasColumnName("is_deleted");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .IsRequired()
+                .HasColumnName("is_deleted");
 
             entity.HasOne(d => d.Post).WithMany(p => p.Likes)
                 .HasForeignKey(d => d.PostId)
@@ -649,6 +652,10 @@ public partial class AnGiDayContext : DbContext
             entity.Property(e => e.GoogleId)
                 .HasMaxLength(64)
                 .HasColumnName("google_id");
+            entity.Property(e => e.Status)
+                .HasColumnType("user_status")
+                .HasColumnName("status")
+                .IsRequired();
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValue(false)
                 .HasColumnName("is_deleted");
