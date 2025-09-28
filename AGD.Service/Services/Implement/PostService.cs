@@ -3,6 +3,7 @@ using AGD.Repositories.Repositories;
 using AGD.Service.DTOs.Request;
 using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -100,16 +101,24 @@ namespace AGD.Service.Services.Implement
                     UserId = request.UserId,
                     PostId = request.PostId,
                     Rating = request.Rating,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.Now,
                     IsDeleted = false,
                 };
 
-                await _unitOfWork.PostRepository.AddInteractionAsync(interaction, ct);
+                await _unitOfWork.PostRepository.AddInteraction(interaction, ct);
             }
             else
             {
-                interaction.Rating = request.Rating;
-                await _unitOfWork.SaveChangesAsync(ct);
+                if(interaction.Rating == request.Rating && !interaction.IsDeleted)
+                {
+                    interaction.IsDeleted = true;
+                }
+                else
+                {
+                    interaction.Rating = request.Rating;
+                    interaction.IsDeleted = false;
+                }
+                    await _unitOfWork.PostRepository.UpdateInteraction(interaction, ct);
             }
 
             return new RatingResponse
@@ -117,8 +126,8 @@ namespace AGD.Service.Services.Implement
                 UserId = interaction.UserId,
                 PostId = interaction.PostId,
                 Rating = interaction.Rating,
-                CreatedAt = DateTime.UtcNow,
-                IsDeleted = false,
+                CreatedAt = DateTime.Now,
+                IsDeleted = interaction.IsDeleted,
             };
         }
 
