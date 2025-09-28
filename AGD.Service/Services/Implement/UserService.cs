@@ -634,7 +634,7 @@ namespace AGD.Service.Services.Implement
                 //PhoneNumber = request.PhoneNumber,
                 Gender = request.Gender,
                 DateOfBirth = request.DateOfBirth,
-                AvatarUrl = request.AvatarUrl,
+                AvatarUrl = "/uploads/anonymous.jpg",
                 RoleId = 1,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
