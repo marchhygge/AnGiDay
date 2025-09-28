@@ -17,8 +17,9 @@ namespace AGD.Service.Integrations
             var payload = new             
             {
                 Model = model,
-                Text = text
+                Prompt = text
             };
+            Console.WriteLine($"Ollama embedding request: {JsonSerializer.Serialize(payload)}");
 
             using var response = await _httpClient.PostAsJsonAsync("/api/embeddings", payload, ct);
             response.EnsureSuccessStatusCode();

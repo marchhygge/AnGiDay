@@ -26,7 +26,7 @@ namespace AGD.Repositories.Repositories
 
         public async Task MarkDeletedAsync(int conversationId, CancellationToken ct = default)
         {
-            var conv = await _context.Conversations.FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+            var conv = await _context.Conversations.AsNoTracking().FirstOrDefaultAsync(c => c.Id == conversationId, ct);
             if (conv == null) return;
             conv.IsDeleted = true;
             await SaveChangesAsync(ct);
@@ -34,9 +34,9 @@ namespace AGD.Repositories.Repositories
 
         public async Task UpdateEndedAtAsync(int conversationId, CancellationToken ct = default)
         {
-            var conv = await _context.Conversations.FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+            var conv = await _context.Conversations.AsNoTracking().FirstOrDefaultAsync(c => c.Id == conversationId, ct);
             if (conv == null) return;
-            conv.EndedAt = DateTime.UtcNow;
+            conv.EndedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
             await SaveChangesAsync(ct);
         }
 

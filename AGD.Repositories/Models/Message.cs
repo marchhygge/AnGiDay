@@ -16,13 +16,13 @@ public partial class Message
 
     public bool IsDeleted { get; set; } = false;
 
-    public string ModelName { get; set; } = null!;
+    public string? ModelName { get; set; }
 
     public int? TokensIn { get; set; }
 
     public int? TokensOut { get; set; }
 
-    public string Meta { get; set; } = null!;
+    public string? Meta { get; set; }
     [JsonIgnore]
     public virtual Conversation Conversation { get; set; } = null!;
 }
