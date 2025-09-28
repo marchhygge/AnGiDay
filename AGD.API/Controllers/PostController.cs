@@ -1,4 +1,5 @@
 ﻿using AGD.Repositories.Models;
+using AGD.Service.DTOs.Request;
 using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Implement;
 using AGD.Service.Services.Interfaces;
@@ -55,6 +56,20 @@ namespace AGD.API.Controllers
                 return ApiResult<DetailPostResponse>.FailResponse("Post not found");
 
             return ApiResult<DetailPostResponse>.SuccessResponse(result);
+        }
+
+        [HttpPost("rating")]
+        public async Task<ActionResult<ApiResult<RatingResponse>>> RatePost([FromBody] RatingRequest request, CancellationToken ct = default)
+        {
+            try
+            {
+                var result = await _servicesProvider.PostService.AddRatingAsync(request, ct);
+                return ApiResult<RatingResponse>.SuccessResponse(result, "Rating successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<RatingResponse>.FailResponse($"Rating failed: {ex.Message}", 400);
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using AGD.Repositories.Models;
 using AGD.Repositories.Repositories;
+using AGD.Service.DTOs.Request;
 using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
 using System;
@@ -75,6 +76,47 @@ namespace AGD.Service.Services.Implement
             }).ToList();
         }
 
+        public async Task<RatingResponse> AddRatingAsync(RatingRequest request, CancellationToken ct = default)
+        {
+            var post = await _unitOfWork.PostRepository.GetByIdAsync(ct, request.PostId);
+
+            if(post == null)
+            {
+                throw new Exception("Post not found");
+            }
+
+            var interaction = await _unitOfWork.PostRepository.GetByUserAndPostId(request.UserId, request.PostId, ct);
+
+            if(interaction == null)
+            {
+                interaction = new UserPostInteraction
+                {
+                    UserId = request.UserId,
+                    PostId = request.PostId,
+                    Rating = request.Rating,
+                    CreatedAt = DateTime.UtcNow,
+                    IsDeleted = false,
+                };
+
+                await _unitOfWork.PostRepository.AddInteractionAsync(interaction, ct);
+            }
+            else
+            {
+                interaction.Rating = request.Rating;
+                await _unitOfWork.PostRepository.UpdateInteractionAsync(interaction, ct);
+            }
+
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            return new RatingResponse
+            {
+                UserId = request.UserId,
+                PostId = request.PostId,
+                Rating = request.Rating,
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false,
+            };
+        }
 
     }
 }

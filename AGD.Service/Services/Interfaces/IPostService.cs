@@ -1,4 +1,5 @@
 ﻿using AGD.Repositories.Models;
+using AGD.Service.DTOs.Request;
 using AGD.Service.DTOs.Response;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,6 @@ namespace AGD.Service.Services.Interfaces
         Task<IEnumerable<FeedbackResponse>> GetRestaurantFeedback(int resId, CancellationToken ct = default);
         Task<Post?> GetAsync(int id, CancellationToken ct = default);
         Task<DetailPostResponse> GetPostDetail(int id, CancellationToken ct = default);
-
+        Task<RatingResponse> AddRatingAsync(RatingRequest request, CancellationToken ct = default);
     }
 }
