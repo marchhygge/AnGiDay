@@ -88,18 +88,25 @@ builder.Services.AddHostedService<EmbeddingIngestWorker>();
 builder.Services.AddScoped<IObjectStorageService, R2StorageService>();
 builder.Services.AddScoped<IPostService, PostService>();
 //Connect DB
+var enableSensitiveDataLogging = builder.Configuration.GetValue<bool>("Db:EnableSensitiveDataLogging", false);
 builder.Services.AddDbContext<AnGiDayContext>(options =>
 {
     options.UseNpgsql(dataSource);
     options.EnableDetailedErrors();
-    options.EnableSensitiveDataLogging();
+    if (enableSensitiveDataLogging)
+    {
+        options.EnableSensitiveDataLogging();
+    }
 });
 
 builder.Services.AddDbContext<AnGiDayVectorContext>(options =>
 {
     options.UseNpgsql(vectorDs);
     options.EnableDetailedErrors();
-    options.EnableSensitiveDataLogging();
+    if (enableSensitiveDataLogging)
+    {
+        options.EnableSensitiveDataLogging();
+    }
 });
 
 builder.Services.AddHttpClient<OllamaClient>(c => c.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"]!));

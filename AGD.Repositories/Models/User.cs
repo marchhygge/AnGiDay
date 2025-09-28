@@ -63,7 +63,7 @@ public partial class User
     public virtual Role Role { get; set; } = null!;
     [JsonIgnore]
     public virtual ICollection<UserLocation> UserLocations { get; set; } = new List<UserLocation>();
-
+    [JsonIgnore]
     public virtual ICollection<UserPostInteraction> UserPostInteractions { get; set; } = new List<UserPostInteraction>();
     [JsonIgnore]    
     public virtual ICollection<UserRestaurantInteraction> UserRestaurantInteractions { get; set; } = new List<UserRestaurantInteraction>();
