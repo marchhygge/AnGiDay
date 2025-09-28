@@ -41,4 +41,6 @@ public partial class Post
     public virtual SignatureFood? SignatureFood { get; set; }
     
     public virtual User User { get; set; } = null!;
+
+    public virtual ICollection<UserPostInteraction> UserPostInteractions { get; set; } = new List<UserPostInteraction>();
 }
