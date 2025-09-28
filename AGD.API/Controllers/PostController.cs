@@ -64,7 +64,7 @@ namespace AGD.API.Controllers
             try
             {
                 var result = await _servicesProvider.PostService.AddRatingAsync(request, ct);
-                return ApiResult<RatingResponse>.SuccessResponse(result, "Rating successfully");
+                return ApiResult<RatingResponse>.SuccessResponse(result, "Rating successfully", 201);
             }
             catch (Exception ex)
             {

@@ -49,7 +49,7 @@ namespace AGD.Repositories.Repositories
 
         public async Task<UserPostInteraction?> GetByUserAndPostId (int userId, int postId, CancellationToken ct)
         {
-            return await _context.UserPostInteractions.AsNoTracking()
+            return await _context.UserPostInteractions
                 .FirstOrDefaultAsync(up => up.UserId == userId && up.PostId == postId && !up.IsDeleted, ct);
         }
 

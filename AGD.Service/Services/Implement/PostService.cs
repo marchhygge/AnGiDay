@@ -85,6 +85,12 @@ namespace AGD.Service.Services.Implement
                 throw new Exception("Post not found");
             }
 
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(ct, request.UserId);
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+
             var interaction = await _unitOfWork.PostRepository.GetByUserAndPostId(request.UserId, request.PostId, ct);
 
             if(interaction == null)
@@ -103,16 +109,14 @@ namespace AGD.Service.Services.Implement
             else
             {
                 interaction.Rating = request.Rating;
-                await _unitOfWork.PostRepository.UpdateInteractionAsync(interaction, ct);
+                await _unitOfWork.SaveChangesAsync(ct);
             }
-
-            await _unitOfWork.SaveChangesAsync(ct);
 
             return new RatingResponse
             {
-                UserId = request.UserId,
-                PostId = request.PostId,
-                Rating = request.Rating,
+                UserId = interaction.UserId,
+                PostId = interaction.PostId,
+                Rating = interaction.Rating,
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false,
             };

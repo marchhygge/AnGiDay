@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization;
 
 namespace AGD.Repositories.Models;
-[Table("user_post_interactions")]
+
 public partial class UserPostInteraction
 {
     public int Id { get; set; }
