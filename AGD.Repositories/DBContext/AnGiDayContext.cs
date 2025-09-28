@@ -375,25 +375,46 @@ public partial class AnGiDayContext : DbContext
         modelBuilder.Entity<Post>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("posts_pkey");
+
             entity.ToTable("posts");
 
             entity.HasIndex(e => e.CreatedAt, "idx_posts_created_at");
+
             entity.HasIndex(e => e.IsDeleted, "idx_posts_is_deleted");
+
             entity.HasIndex(e => e.RestaurantId, "idx_posts_restaurant");
+
             entity.HasIndex(e => e.SignatureFoodId, "idx_posts_signature_food");
+
             entity.HasIndex(e => e.Type, "idx_posts_type");
+
             entity.HasIndex(e => e.UserId, "idx_posts_user");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Content)
+                .IsRequired()
+                .HasColumnName("content");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.ImageUrl)
+                .HasMaxLength(255)
+                .HasColumnName("image_url");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
             entity.Property(e => e.RestaurantId).HasColumnName("restaurant_id");
-            entity.Property(e => e.Type).IsRequired().HasMaxLength(20).HasColumnName("type");
-            entity.Property(e => e.Content).IsRequired().HasColumnName("content");
-            entity.Property(e => e.ImageUrl).HasMaxLength(255).HasColumnName("image_url");
             entity.Property(e => e.SignatureFoodId).HasColumnName("signature_food_id");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("created_at");
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("updated_at");
-            entity.Property(e => e.IsDeleted).HasDefaultValue(false).IsRequired().HasColumnName("is_deleted");
+            entity.Property(e => e.Type)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("type");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Restaurant).WithMany(p => p.Posts)
                 .HasForeignKey(d => d.RestaurantId)
@@ -586,40 +607,81 @@ public partial class AnGiDayContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("users_pkey");
+
             entity.ToTable("users");
 
             entity.HasIndex(e => e.Email, "idx_users_email").IsUnique();
+
             entity.HasIndex(e => e.Username, "idx_users_username");
+
             entity.HasIndex(e => e.Email, "users_email_key").IsUnique();
+
             entity.HasIndex(e => e.Username, "users_username_key").IsUnique();
-            entity.HasIndex(e => e.GoogleId, "ux_users_google_id").IsUnique().HasFilter("(google_id IS NOT NULL)");
+
+            entity.HasIndex(e => e.GoogleId, "ux_users_google_id")
+                .IsUnique()
+                .HasFilter("(google_id IS NOT NULL)");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Username).IsRequired().HasMaxLength(50).HasColumnName("username");
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(100).HasColumnName("email");
-            entity.Property(e => e.IsEmailVerified).HasDefaultValue(false).IsRequired().HasColumnName("is_email_verified");
-            entity.Property(e => e.EmailVerifiedAt).HasColumnType("timestamp without time zone").HasColumnName("email_verified_at");
-            entity.Property(e => e.PhoneNumber).IsRequired().HasMaxLength(30).HasColumnName("phone_number");
-            entity.Property(e => e.IsPhoneVerified).HasDefaultValue(false).IsRequired().HasColumnName("is_phone_verified");
-            entity.Property(e => e.PhoneVerifiedAt).HasColumnType("timestamp without time zone").HasColumnName("phone_verified_at");
-            entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(255).HasColumnName("password_hash");
-            entity.Property(e => e.RoleId).IsRequired().HasColumnName("role_id");
-            entity.Property(e => e.FullName).IsRequired().HasMaxLength(100).HasColumnName("full_name");
-            entity.Property(e => e.AvatarUrl).HasMaxLength(255).HasColumnName("avatar_url");
-            entity.Property(e => e.Gender).IsRequired().HasMaxLength(10).HasColumnName("gender");
+            entity.Property(e => e.AvatarUrl)
+                .HasMaxLength(255)
+                .HasColumnName("avatar_url");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
             entity.Property(e => e.DateOfBirth).HasColumnName("date_of_birth");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("created_at");
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("updated_at");
-            entity.Property(e => e.IsDeleted).HasDefaultValue(false).IsRequired().HasColumnName("is_deleted");
-            entity.Property(e => e.GoogleId).HasMaxLength(64).HasColumnName("google_id");
-            entity.Property(e => e.Status)
-                  .IsRequired()
-                  .HasColumnType("user_status")
-                  .HasColumnName("status");
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("email");
+            entity.Property(e => e.EmailVerifiedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("email_verified_at");
+            entity.Property(e => e.FullName)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("full_name");
+            entity.Property(e => e.Gender)
+                .IsRequired()
+                .HasMaxLength(10)
+                .HasColumnName("gender");
+            entity.Property(e => e.GoogleId)
+                .HasMaxLength(64)
+                .HasColumnName("google_id");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.IsEmailVerified)
+                .HasDefaultValue(false)
+                .HasColumnName("is_email_verified");
+            entity.Property(e => e.IsPhoneVerified)
+                .HasDefaultValue(false)
+                .HasColumnName("is_phone_verified");
+            entity.Property(e => e.PasswordHash)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasColumnName("password_hash");
+            entity.Property(e => e.PhoneNumber)
+                .IsRequired()
+                .HasMaxLength(30)
+                .HasColumnName("phone_number");
+            entity.Property(e => e.PhoneVerifiedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("phone_verified_at");
+            entity.Property(e => e.RoleId).HasColumnName("role_id");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.Username)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnName("username");
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
-                .OnDelete(DeleteBehavior.Restrict)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("users_role_id_fkey");
         });
 
@@ -643,6 +705,42 @@ public partial class AnGiDayContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("user_locations_user_id_fkey");
+        });
+
+        modelBuilder.Entity<UserPostInteraction>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("user_post_interactions_pkey");
+
+            entity.ToTable("user_post_interactions");
+
+            entity.HasIndex(e => e.PostId, "idx_user_post_interactions_post");
+
+            entity.HasIndex(e => e.PostId, "idx_user_post_interactions_post_not_deleted").HasFilter("(is_deleted = false)");
+
+            entity.HasIndex(e => e.UserId, "idx_user_post_interactions_user");
+
+            entity.HasIndex(e => new { e.UserId, e.PostId }, "ux_user_post").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Comment).HasColumnName("comment");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.PostId).HasColumnName("post_id");
+            entity.Property(e => e.Rating).HasColumnName("rating");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Post).WithMany(p => p.UserPostInteractions)
+                .HasForeignKey(d => d.PostId)
+                .HasConstraintName("user_post_interactions_post_id_fkey");
+
+            entity.HasOne(d => d.User).WithMany(p => p.UserPostInteractions)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("user_post_interactions_user_id_fkey");
         });
 
         modelBuilder.Entity<UserRestaurantInteraction>(entity =>
