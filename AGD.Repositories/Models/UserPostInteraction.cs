@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
-
-namespace AGD.Repositories.Models;
+﻿namespace AGD.Repositories.Models;
 
 public partial class UserPostInteraction
 {
@@ -11,15 +8,23 @@ public partial class UserPostInteraction
 
     public int PostId { get; set; }
 
-    public int? Rating { get; set; }
+    public int? RestaurantId { get; set; }
 
-    public string? Comment { get; set; }
+    public string InteractionType { get; set; } = null!;
+
+    public string? Detail { get; set; }
+
+    public int? PlanId { get; set; }
+
+    public int? SubscriptionId { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
     public bool IsDeleted { get; set; }
-    [JsonIgnore]
+
     public virtual Post Post { get; set; } = null!;
-    [JsonIgnore]
+
+    public virtual Restaurant? Restaurant { get; set; }
+
     public virtual User User { get; set; } = null!;
 }
