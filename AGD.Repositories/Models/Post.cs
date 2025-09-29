@@ -23,11 +23,13 @@ public partial class Post
     public DateTime? UpdatedAt { get; set; }
 
     public bool IsDeleted { get; set; } = false;
+
+    public int? Rating { get; set; }
     [JsonIgnore]
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
-
+    [JsonIgnore]
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
-
+    [JsonIgnore]
     public virtual ICollection<Like> Likes { get; set; } = new List<Like>();
     [JsonIgnore]
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
