@@ -46,5 +46,32 @@ namespace AGD.Repositories.Repositories
 
             return query;
         }
+
+        public async Task<Like?> GetByUserAndPostId (int userId, int postId, CancellationToken ct)
+        {
+            return await _context.Likes.AsNoTracking()
+                .FirstOrDefaultAsync(up => up.UserId == userId && up.PostId == postId, ct);
+        }
+
+        public async Task<int> CountLikesByPostIdAsync(int postId, CancellationToken ct)
+        {
+            return await _context.Likes.AsNoTracking()
+                .Where(l => l.PostId == postId && !l.IsDeleted)
+                .CountAsync(ct);
+        }
+
+        public async Task<Like> AddLikePost(Like like, CancellationToken ct)
+        {
+            _context.Likes.Add(like);
+            await SaveChangesAsync(ct);
+            return like;
+        }
+
+        public async Task<Like> UpdateLikePost(Like like, CancellationToken ct)
+        {
+            _context.Likes.Update(like);
+            await SaveChangesAsync(ct);
+            return like;
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using AGD.Repositories.Models;
+using AGD.Service.DTOs.Request;
 using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Implement;
 using AGD.Service.Services.Interfaces;
@@ -55,6 +56,24 @@ namespace AGD.API.Controllers
                 return ApiResult<DetailPostResponse>.FailResponse("Post not found");
 
             return ApiResult<DetailPostResponse>.SuccessResponse(result);
+        }
+
+        [HttpPost("like")]
+        public async Task<ActionResult<ApiResult<LikeResponse>>> RatePost([FromBody] LikeRequest request, CancellationToken ct = default)
+        {
+            try
+            {
+                var result = await _servicesProvider.PostService.AddLikeAsync(request, ct);
+               
+                if (result.IsDeleted)
+                    return ApiResult<LikeResponse>.SuccessResponse(result, "Unlike successfully", 201);
+
+                return ApiResult<LikeResponse>.SuccessResponse(result, "Like successfully", 201);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<LikeResponse>.FailResponse($"Like failed: {ex.Message}", 400);
+            }
         }
     }
 }

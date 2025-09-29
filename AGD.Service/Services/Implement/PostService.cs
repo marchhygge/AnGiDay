@@ -1,7 +1,9 @@
 ﻿using AGD.Repositories.Models;
 using AGD.Repositories.Repositories;
+using AGD.Service.DTOs.Request;
 using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,6 +77,59 @@ namespace AGD.Service.Services.Implement
             }).ToList();
         }
 
+        public async Task<LikeResponse> AddLikeAsync(LikeRequest request, CancellationToken ct = default)
+        {
+            var post = await _unitOfWork.PostRepository.GetByIdAsync(ct, request.PostId);
+
+            if(post == null)
+            {
+                throw new Exception("Post not found");
+            }
+
+            var user = await _unitOfWork.UserRepository.GetByIdAsync(ct, request.UserId);
+            if (user == null)
+            {
+                throw new Exception("User not found");
+            }
+
+            var interaction = await _unitOfWork.PostRepository.GetByUserAndPostId(request.UserId, request.PostId, ct);
+
+            if(interaction == null)
+            {
+                interaction = new Like
+                {
+                    UserId = request.UserId,
+                    PostId = request.PostId,
+                    CreatedAt = DateTime.Now,
+                    IsDeleted = false,
+                };
+
+                await _unitOfWork.PostRepository.AddLikePost(interaction, ct);
+            }
+            else
+            {
+                if(!interaction.IsDeleted)
+                {
+                    interaction.IsDeleted = true;
+                }
+                else
+                {
+                    interaction.IsDeleted = !interaction.IsDeleted;
+                }
+                    await _unitOfWork.PostRepository.UpdateLikePost(interaction, ct);
+            }
+
+            var totalLikes = await _unitOfWork.PostRepository.CountLikesByPostIdAsync(request.PostId, ct);
+
+            return new LikeResponse
+            {
+                UserId = interaction.UserId,
+                PostId = interaction.PostId,
+                CreatedAt = DateTime.Now,
+                IsDeleted = interaction.IsDeleted,
+                TotalLikes = totalLikes
+            };
+        }
 
     }
 }
