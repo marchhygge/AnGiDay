@@ -73,7 +73,7 @@ namespace AGD.Service.Services.Implement
 
             sb.AppendLine("Món ăn tiêu biểu:");
             i = 1;
-            foreach (var f in foods.Take(20))
+            foreach (var f in foods.Take(5))
             {
                 sb.AppendLine($"[{i++}] {f.Name} tại {f.RestaurantName}");
             }

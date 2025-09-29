@@ -407,6 +407,7 @@ public partial class AnGiDayContext : DbContext
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValue(false)
                 .HasColumnName("is_deleted");
+            entity.Property(e => e.Rating).HasColumnName("rating");
             entity.Property(e => e.RestaurantId).HasColumnName("restaurant_id");
             entity.Property(e => e.SignatureFoodId).HasColumnName("signature_food_id");
             entity.Property(e => e.Type)
@@ -494,9 +495,16 @@ public partial class AnGiDayContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100).HasColumnName("name");
             entity.Property(e => e.Address).IsRequired().HasMaxLength(255).HasColumnName("address");
+            entity.Property(e => e.AvgRating)
+                .HasPrecision(3, 2)
+                .HasDefaultValueSql("0")
+                .HasColumnName("avg_rating");
             entity.Property(e => e.OwnerId).IsRequired().HasColumnName("owner_id");
             entity.Property(e => e.Description).IsRequired().HasColumnName("description");
             entity.Property(e => e.PhoneNumber).IsRequired().HasMaxLength(30).HasColumnName("phone_number");
+            entity.Property(e => e.RatingCount)
+                .HasDefaultValue(0)
+                .HasColumnName("rating_count");
             entity.Property(e => e.ImageUrl).IsRequired().HasMaxLength(255).HasColumnName("image_url");
             entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValueSql("'active'::character varying").HasColumnName("status");
             entity.Property(e => e.Latitude).IsRequired().HasColumnName("latitude");
@@ -724,26 +732,43 @@ public partial class AnGiDayContext : DbContext
 
             entity.HasIndex(e => e.PostId, "idx_user_post_interactions_post_not_deleted").HasFilter("(is_deleted = false)");
 
+            entity.HasIndex(e => e.RestaurantId, "idx_user_post_interactions_restaurant");
+
+            entity.HasIndex(e => e.InteractionType, "idx_user_post_interactions_type");
+
             entity.HasIndex(e => e.UserId, "idx_user_post_interactions_user");
 
-            entity.HasIndex(e => new { e.UserId, e.PostId }, "ux_user_post").IsUnique();
-
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Comment).HasColumnName("comment");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_at");
+            entity.Property(e => e.Detail)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("detail");
+            entity.Property(e => e.InteractionType)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValueSql("'view'::character varying")
+                .HasColumnName("interaction_type");
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValue(false)
                 .HasColumnName("is_deleted");
+            entity.Property(e => e.PlanId).HasColumnName("plan_id");
             entity.Property(e => e.PostId).HasColumnName("post_id");
-            entity.Property(e => e.Rating).HasColumnName("rating");
+            entity.Property(e => e.RestaurantId).HasColumnName("restaurant_id");
+            entity.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Post).WithMany(p => p.UserPostInteractions)
                 .HasForeignKey(d => d.PostId)
                 .HasConstraintName("user_post_interactions_post_id_fkey");
+
+            entity.HasOne(d => d.Restaurant).WithMany(p => p.UserPostInteractions)
+                .HasForeignKey(d => d.RestaurantId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("user_post_interactions_restaurant_id_fkey");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserPostInteractions)
                 .HasForeignKey(d => d.UserId)
