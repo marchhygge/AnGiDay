@@ -77,7 +77,7 @@ namespace AGD.Service.Services.Implement
             }).ToList();
         }
 
-        public async Task<RatingResponse> AddRatingAsync(RatingRequest request, CancellationToken ct = default)
+        public async Task<LikeResponse> AddLikeAsync(LikeRequest request, CancellationToken ct = default)
         {
             var post = await _unitOfWork.PostRepository.GetByIdAsync(ct, request.PostId);
 
@@ -96,38 +96,38 @@ namespace AGD.Service.Services.Implement
 
             if(interaction == null)
             {
-                interaction = new UserPostInteraction
+                interaction = new Like
                 {
                     UserId = request.UserId,
                     PostId = request.PostId,
-                    Rating = request.Rating,
                     CreatedAt = DateTime.Now,
                     IsDeleted = false,
                 };
 
-                await _unitOfWork.PostRepository.AddInteraction(interaction, ct);
+                await _unitOfWork.PostRepository.AddLikePost(interaction, ct);
             }
             else
             {
-                if(interaction.Rating == request.Rating && !interaction.IsDeleted)
+                if(!interaction.IsDeleted)
                 {
                     interaction.IsDeleted = true;
                 }
                 else
                 {
-                    interaction.Rating = request.Rating;
-                    interaction.IsDeleted = false;
+                    interaction.IsDeleted = !interaction.IsDeleted;
                 }
-                    await _unitOfWork.PostRepository.UpdateInteraction(interaction, ct);
+                    await _unitOfWork.PostRepository.UpdateLikePost(interaction, ct);
             }
 
-            return new RatingResponse
+            var totalLikes = await _unitOfWork.PostRepository.CountLikesByPostIdAsync(request.PostId, ct);
+
+            return new LikeResponse
             {
                 UserId = interaction.UserId,
                 PostId = interaction.PostId,
-                Rating = interaction.Rating,
                 CreatedAt = DateTime.Now,
                 IsDeleted = interaction.IsDeleted,
+                TotalLikes = totalLikes
             };
         }
 

@@ -58,17 +58,21 @@ namespace AGD.API.Controllers
             return ApiResult<DetailPostResponse>.SuccessResponse(result);
         }
 
-        [HttpPost("rating")]
-        public async Task<ActionResult<ApiResult<RatingResponse>>> RatePost([FromBody] RatingRequest request, CancellationToken ct = default)
+        [HttpPost("like")]
+        public async Task<ActionResult<ApiResult<LikeResponse>>> RatePost([FromBody] LikeRequest request, CancellationToken ct = default)
         {
             try
             {
-                var result = await _servicesProvider.PostService.AddRatingAsync(request, ct);
-                return ApiResult<RatingResponse>.SuccessResponse(result, "Rating successfully", 201);
+                var result = await _servicesProvider.PostService.AddLikeAsync(request, ct);
+               
+                if (result.IsDeleted)
+                    return ApiResult<LikeResponse>.SuccessResponse(result, "Unlike successfully", 201);
+
+                return ApiResult<LikeResponse>.SuccessResponse(result, "Like successfully", 201);
             }
             catch (Exception ex)
             {
-                return ApiResult<RatingResponse>.FailResponse($"Rating failed: {ex.Message}", 400);
+                return ApiResult<LikeResponse>.FailResponse($"Like failed: {ex.Message}", 400);
             }
         }
     }
