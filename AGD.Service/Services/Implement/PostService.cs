@@ -2,11 +2,6 @@
 using AGD.Repositories.Repositories;
 using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AGD.Service.Services.Implement
 {
@@ -49,7 +44,7 @@ namespace AGD.Service.Services.Implement
 
             var postRes = new DetailPostResponse
             {
-                Id = post.Id,
+                Id = post!.Id,
                 Content = post.Content,
                 ImageUrl = post.ImageUrl,
                 CreatedAt = post.CreatedAt,
