@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,5 @@ namespace AGD.Service.DTOs.Request
         //public string PhoneNumber { get; set; } = null!;
         public string Gender { get; set; } = null!;
         public DateOnly? DateOfBirth { get; set; }
-        public string? AvatarUrl { get; set; }
     }
 }

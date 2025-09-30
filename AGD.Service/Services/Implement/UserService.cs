@@ -634,10 +634,10 @@ namespace AGD.Service.Services.Implement
                 //PhoneNumber = request.PhoneNumber,
                 Gender = request.Gender,
                 DateOfBirth = request.DateOfBirth,
-                AvatarUrl = request.AvatarUrl,
+                AvatarUrl = "/uploads/anonymous.jpg",
                 RoleId = 1,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now,
+                CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
+                UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
                 IsDeleted = false
             };
 
@@ -655,7 +655,7 @@ namespace AGD.Service.Services.Implement
                 Gender = newUser.Gender,
                 DateOfBirth = newUser.DateOfBirth,
                 AvatarUrl = newUser.AvatarUrl,
-                CreatedAt = newUser.CreatedAt ?? DateTime.Now
+                CreatedAt = newUser.CreatedAt ?? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified)
             };
         }
 
