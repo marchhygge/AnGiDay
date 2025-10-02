@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AGD.Repositories.Models;
 
@@ -12,7 +13,7 @@ public partial class WeatherLog
 
     public double Longitude { get; set; }
 
-    public string WeatherData { get; set; } = null!;
+    public JsonDocument? WeatherData { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 

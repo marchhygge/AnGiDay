@@ -2,6 +2,7 @@
 using AGD.API.Middlewares;
 using AGD.Repositories.ConfigurationModels;
 using AGD.Repositories.DBContext;
+using AGD.Repositories.Enums;
 using AGD.Repositories.Helpers;
 using AGD.Repositories.Models;
 using AGD.Repositories.Repositories;
@@ -42,6 +43,9 @@ var dsb = new NpgsqlDataSourceBuilder(cs);
 var vectorDsb = new NpgsqlDataSourceBuilder(vectorCs);
 dsb.MapEnum<UserStatus>("user_status"); // hoặc "public.user_status"
 dsb.MapEnum<NotificationType>("notification_type");
+dsb.MapEnum<PaymentProvider>("payment_provider");
+dsb.MapEnum<PaymentStatus>("payment_status");
+dsb.MapEnum<LedgerEntryType>("ledger_entry_type");
 var dataSource = dsb.Build();
 var vectorDs = vectorDsb.Build();
 

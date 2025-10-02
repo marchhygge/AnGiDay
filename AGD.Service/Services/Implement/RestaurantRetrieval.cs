@@ -30,7 +30,6 @@ namespace AGD.Service.Services.Implement
 
             var baseList = await _unitOfWork.RestaurantRepository.GetActiveRestaurantsBasicAsync(ct);
             var tagDict = await _unitOfWork.RestaurantRepository.GetTagNamesForRestaurantsAsync(baseList.Select(b => b.Id), ct);
-            var ratingDict = await _unitOfWork.RestaurantRepository.GetRatingsForRestaurantsAsync(baseList.Select(b => b.Id), ct);
 
             double Haversine(double lat1, double lon1, double lat2, double lon2)
             {
@@ -53,7 +52,8 @@ namespace AGD.Service.Services.Implement
                     var inter = tags.Intersect(userTagNames, StringComparer.OrdinalIgnoreCase).Count();
                     tagMatch = inter / (double)tags.Length;
                 }
-                double avgRating = ratingDict.TryGetValue(x.Id, out var r) ? r : 0.0;
+
+                double avgRating = x.AvgRating.GetValueOrDefault(0.0);
                 double ratingScore = avgRating / 5.0;
                 double distanceScore = 1.0 - Math.Min(distance / 8.0, 1.0);
 

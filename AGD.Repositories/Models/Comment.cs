@@ -21,7 +21,7 @@ public partial class Comment
     public virtual ICollection<Comment> InverseParent { get; set; } = new List<Comment>();
     [JsonIgnore]
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
-
+    [JsonIgnore]
     public virtual Comment? Parent { get; set; }
 
     public virtual Post Post { get; set; } = null!;

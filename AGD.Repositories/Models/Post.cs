@@ -33,7 +33,9 @@ public partial class Post
     public virtual ICollection<Like> Likes { get; set; } = new List<Like>();
     [JsonIgnore]
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
-    
+    [JsonIgnore]
+    public virtual ICollection<PostPerformance> PostPerformances { get; set; } = new List<PostPerformance>();
+
     public virtual ICollection<PostTag> PostTags { get; set; } = new List<PostTag>();
     [JsonIgnore]
     public virtual ICollection<Report> Reports { get; set; } = new List<Report>();
