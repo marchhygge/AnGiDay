@@ -81,9 +81,14 @@ namespace AGD.Service.Services.Implement
         {
             var post = await _unitOfWork.PostRepository.GetByIdAsync(ct, request.PostId);
 
-            if(post == null)
+            if (post == null)
             {
                 throw new Exception("Post not found");
+            }
+
+            if (post.Type.Equals("review", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception("You cannot like review posts");
             }
 
             var user = await _unitOfWork.UserRepository.GetByIdAsync(ct, request.UserId);
@@ -94,8 +99,9 @@ namespace AGD.Service.Services.Implement
 
             var interaction = await _unitOfWork.PostRepository.GetByUserAndPostId(request.UserId, request.PostId, ct);
 
-            if(interaction == null)
+            if (interaction == null)
             {
+
                 interaction = new Like
                 {
                     UserId = request.UserId,
