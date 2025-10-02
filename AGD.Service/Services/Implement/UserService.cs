@@ -1,4 +1,5 @@
 using AGD.Repositories.ConfigurationModels;
+using AGD.Repositories.Enums;
 using AGD.Repositories.Models;
 using AGD.Repositories.Repositories;
 using AGD.Service.DTOs.Request;
@@ -195,7 +196,7 @@ namespace AGD.Service.Services.Implement
                     IsDeleted = false,
 
                     GoogleId = googleId,
-                    Status = UserStatus.active
+                    Status = UserStatus.Active
                 };
 
                 var pictureUrl = string.IsNullOrWhiteSpace(payload.Picture) ? null : payload.Picture;
@@ -246,7 +247,7 @@ namespace AGD.Service.Services.Implement
                 await _unitOfWork.SaveChangesAsync(ct);
             }
 
-            if (user.Status != UserStatus.active)
+            if (user.Status != UserStatus.Active)
             {
                 throw new UnauthorizedAccessException("User account is not active or banned.");
             }
@@ -597,7 +598,7 @@ namespace AGD.Service.Services.Implement
                 throw new UnauthorizedAccessException("Invalid Password");
             }
 
-            if (user.Status != UserStatus.active) throw new UnauthorizedAccessException("User account is not active or banned.");
+            if (user.Status != UserStatus.Active) throw new UnauthorizedAccessException("User account is not active or banned.");
 
             var jwt = _unitOfWork.JwtHelper.GenerateToken(user);
 
@@ -663,7 +664,7 @@ namespace AGD.Service.Services.Implement
         {
             var local = email.Split('@')[0].ToLowerInvariant();
 
-            var cleaned = System.Text.RegularExpressions.Regex.Replace(local, "[^a-z0-9_\\-\\.]", "");
+            var cleaned = Regex.Replace(local, "[^a-z0-9_\\-\\.]", "");
             if (string.IsNullOrWhiteSpace(cleaned)) cleaned = "user";
 
             var candidate = cleaned;
@@ -683,19 +684,12 @@ namespace AGD.Service.Services.Implement
             return post.Select(p => new CommunityPostResponse
                 {
                     Id = p.Id,
-
                     UserId = p.UserId,
-
                     Type = p.Type,
-
                     Content = p.Content,
-
                     ImageUrl = p.ImageUrl,
-
                     CreatedAt = p.CreatedAt,
-
                     UpdatedAt = p.UpdatedAt,
-
                     IsDeleted = p.IsDeleted,
                     Username = p.User.Username,
                 });
