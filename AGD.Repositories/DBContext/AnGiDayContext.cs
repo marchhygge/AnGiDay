@@ -1,8 +1,6 @@
 ﻿using AGD.Repositories.Enums;
-using AGD.Repositories.Helpers;
 using AGD.Repositories.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Configuration;
 
 namespace AGD.Repositories.DBContext;
@@ -210,10 +208,6 @@ public partial class AnGiDayContext : DbContext
 
         modelBuilder.Entity<FinancialLedger>(entity =>
         {
-            var ledgerEntryConverter = new ValueConverter<LedgerEntryType, string>(
-                v => EnumConverters.ToDbLabel(v),
-                v => EnumConverters.FromDbLabel<LedgerEntryType>(v)
-            );
             entity.HasKey(e => e.Id).HasName("financial_ledger_pkey");
 
             entity.ToTable("financial_ledger");
@@ -221,7 +215,7 @@ public partial class AnGiDayContext : DbContext
             entity.HasIndex(e => e.TransactionId, "idx_ledger_txn");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(l => l.EntryType).HasColumnType("ledger_entry_type").HasConversion(ledgerEntryConverter).HasColumnName("entry_type");
+            entity.Property(l => l.EntryType).HasColumnType("ledger_entry_type").HasColumnName("entry_type");
             entity.Property(e => e.Account)
                 .IsRequired()
                 .HasMaxLength(100)
@@ -391,10 +385,6 @@ public partial class AnGiDayContext : DbContext
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            var notificationTypeConverter = new ValueConverter<PaymentProvider, string>(
-                v => EnumConverters.ToDbLabel(v),
-                v => EnumConverters.FromDbLabel<PaymentProvider>(v)
-            );
             entity.HasKey(e => e.Id).HasName("notifications_pkey");
             entity.ToTable("notifications");
 
@@ -407,7 +397,6 @@ public partial class AnGiDayContext : DbContext
 
             entity.Property(e => e.Type)
                 .IsRequired()
-                .HasConversion(notificationTypeConverter)
                 .HasColumnType("notification_type")
                 .HasColumnName("type");
 
@@ -1059,15 +1048,6 @@ public partial class AnGiDayContext : DbContext
 
         modelBuilder.Entity<Transaction>(static entity =>
         {
-            var paymentProviderConverter = new ValueConverter<PaymentProvider, string>(
-                v => EnumConverters.ToDbLabel(v),
-                v => EnumConverters.FromDbLabel<PaymentProvider>(v)
-            );
-
-            var paymentStatusConverter = new ValueConverter<PaymentStatus, string>(
-                v => EnumConverters.ToDbLabel(v),
-                v => EnumConverters.FromDbLabel<PaymentStatus>(v)
-            );
 
             entity.HasKey(e => e.Id).HasName("transactions_pkey");
 
@@ -1088,8 +1068,8 @@ public partial class AnGiDayContext : DbContext
                 .HasColumnName("currency");
             entity.Property(e => e.Description).HasColumnName("description");
             entity.Property(e => e.FailureReason).HasColumnName("failure_reason");
-            entity.Property(t => t.Provider).HasConversion(paymentProviderConverter).HasColumnType("payment_provider").HasColumnName("provider");
-            entity.Property(t => t.Status).HasConversion(paymentStatusConverter).HasColumnType("payment_status").HasColumnName("status");
+            entity.Property(t => t.Provider).HasColumnType("payment_provider").HasColumnName("provider");
+            entity.Property(t => t.Status).HasColumnType("payment_status").HasColumnName("status");
             entity.Property(e => e.IdempotencyKey)
                 .HasMaxLength(255)
                 .HasColumnName("idempotency_key");
@@ -1150,10 +1130,6 @@ public partial class AnGiDayContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            var userStatusConverter = new ValueConverter<UserStatus, string>(
-                v => EnumConverters.ToDbLabel(v),
-                v => EnumConverters.FromDbLabel<UserStatus>(v)
-            );
             entity.HasKey(e => e.Id).HasName("users_pkey");
 
             entity.ToTable("users");
@@ -1197,7 +1173,6 @@ public partial class AnGiDayContext : DbContext
                 .HasMaxLength(64)
                 .HasColumnName("google_id");
             entity.Property(e => e.Status)
-                .HasConversion(userStatusConverter)
                 .HasColumnType("user_status")
                 .HasColumnName("status")
                 .IsRequired();
