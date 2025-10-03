@@ -59,7 +59,7 @@ namespace AGD.API.Controllers
         }
 
         [HttpPost("like")]
-        public async Task<ActionResult<ApiResult<LikeResponse>>> RatePost([FromBody] LikeRequest request, CancellationToken ct = default)
+        public async Task<ActionResult<ApiResult<LikeResponse>>> LikePost([FromBody] LikeRequest request, CancellationToken ct = default)
         {
             try
             {
@@ -73,6 +73,21 @@ namespace AGD.API.Controllers
             catch (Exception ex)
             {
                 return ApiResult<LikeResponse>.FailResponse($"Like failed: {ex.Message}", 400);
+            }
+        }
+
+        [HttpPost("create-post")]
+        public async Task<ActionResult<ApiResult<PostResponse>>> CreatePost ([FromBody] PostRequest request, CancellationToken ct = default)
+        {
+            try
+            {
+                var result = await _servicesProvider.PostService.CreatePostAsync(request, ct);
+
+                return ApiResult<PostResponse>.SuccessResponse(result, "Create post successfully", 201);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<PostResponse>.FailResponse($"Create post fail: {ex}", 400);
             }
         }
     }

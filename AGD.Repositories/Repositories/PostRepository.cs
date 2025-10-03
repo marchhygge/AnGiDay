@@ -73,5 +73,12 @@ namespace AGD.Repositories.Repositories
             await SaveChangesAsync(ct);
             return like;
         }
+
+        public async Task<Post> CreatePostAsync(Post post, CancellationToken ct)
+        {
+            _context.Posts.Add(post);
+            await SaveChangesAsync(ct);
+            return post;
+        }
     }
 }

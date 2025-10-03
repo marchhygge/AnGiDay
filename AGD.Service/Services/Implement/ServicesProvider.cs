@@ -38,6 +38,8 @@ namespace AGD.Service.Services.Implement
         private ITokenService? _tokenService;
         private IChatService? _chatService;
         private IWeatherProvider? _weatherProvider;
+        private ITagService? _tagService;
+        private IUserTagService? _userTagService;
 
         public ServicesProvider(IUnitOfWork unitOfWork, 
                                 IOptions<GoogleIdTokenOptions> googleOptions, 
@@ -78,5 +80,7 @@ namespace AGD.Service.Services.Implement
         public ITokenService TokenService => _tokenService ??= new TokenService(_unitOfWork.JwtHelper);
         public IWeatherProvider WeatherProvider => _weatherProvider ??= new OpenMeteoWeatherProvider(_httpClient, _distributedCache, _logger);
         public IChatService ChatService => _chatService ??= new ChatService(_unitOfWork, _restaurantRetrieval, _vectorRetrievalService, _contextBuilder, _ollamaClient, _configuration);
+        public ITagService TagService => _tagService ??= new TagService(_unitOfWork);
+        public IUserTagService UserTagService => _userTagService ??= new UserTagService(_unitOfWork);
     }
 }
