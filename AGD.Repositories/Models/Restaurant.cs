@@ -33,18 +33,32 @@ public partial class Restaurant
     public decimal? AvgRating { get; set; }
 
     public int? RatingCount { get; set; }
+
+    public DateTime? PromotedUntil { get; set; }
+
+    public int? PromotedPriority { get; set; }
+
+    public bool? AllowPromotion { get; set; }
     [JsonIgnore]
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
     public virtual User Owner { get; set; } = null!;
     [JsonIgnore]
+    public virtual ICollection<OwnerAnalytic> OwnerAnalytics { get; set; } = new List<OwnerAnalytic>();
+    [JsonIgnore]
     public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
     [JsonIgnore]
     public virtual ICollection<RestaurantBranch> RestaurantBranches { get; set; } = new List<RestaurantBranch>();
     [JsonIgnore]
+    public virtual ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();
+    [JsonIgnore]
+    public virtual ICollection<Recommendation> Recommendations { get; set; } = new List<Recommendation>();
+    [JsonIgnore]
     public virtual ICollection<RestaurantTag> RestaurantTags { get; set; } = new List<RestaurantTag>();
     [JsonIgnore]
     public virtual ICollection<SignatureFood> SignatureFoods { get; set; } = new List<SignatureFood>();
+    [JsonIgnore]
+    public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
     [JsonIgnore]
     public virtual ICollection<UserPostInteraction> UserPostInteractions { get; set; } = new List<UserPostInteraction>();
     [JsonIgnore]

@@ -10,7 +10,9 @@ namespace AGD.Repositories.Repositories
         string Name,
         string Address,
         double Latitude,
-        double Longitude
+        double Longitude,
+        double? AvgRating,
+        int? RatingCount
     );
 
     public sealed record FoodBasicProjection(
@@ -141,7 +143,9 @@ namespace AGD.Repositories.Repositories
                     r.Name,
                     r.Address,
                     r.Latitude,
-                    r.Longitude
+                    r.Longitude,
+                    r.AvgRating.HasValue ? (double?)r.AvgRating.Value : null,
+                    r.RatingCount
                 ))
                 .ToListAsync(ct);
         }

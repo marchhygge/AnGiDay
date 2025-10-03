@@ -1,4 +1,7 @@
-﻿namespace AGD.Repositories.Models;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace AGD.Repositories.Models;
 
 public partial class UserPostInteraction
 {
@@ -12,7 +15,7 @@ public partial class UserPostInteraction
 
     public string InteractionType { get; set; } = null!;
 
-    public string? Detail { get; set; }
+    public JsonDocument? Detail { get; set; } = JsonDocument.Parse("{}");
 
     public int? PlanId { get; set; }
 
@@ -21,10 +24,10 @@ public partial class UserPostInteraction
     public DateTime? CreatedAt { get; set; }
 
     public bool IsDeleted { get; set; }
-
+    [JsonIgnore]
     public virtual Post Post { get; set; } = null!;
-
+    [JsonIgnore]
     public virtual Restaurant? Restaurant { get; set; }
-
+    [JsonIgnore]
     public virtual User User { get; set; } = null!;
 }

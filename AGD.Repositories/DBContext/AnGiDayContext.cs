@@ -1,4 +1,5 @@
-﻿using AGD.Repositories.Models;
+﻿using AGD.Repositories.Enums;
+using AGD.Repositories.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -58,8 +59,12 @@ public partial class AnGiDayContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
+            .HasPostgresEnum<LedgerEntryType>("public", "ledger_entry_type")
             .HasPostgresEnum<NotificationType>("public", "notification_type")
-            .HasPostgresEnum<UserStatus>("public", "user_status");
+            .HasPostgresEnum<PaymentProvider>("public", "payment_provider")
+            .HasPostgresEnum<PaymentStatus>("public", "payment_status")
+            .HasPostgresEnum<UserStatus>("public", "user_status")
+            .HasPostgresExtension("pgcrypto"); ;
 
         modelBuilder.Entity<Bookmark>(entity =>
         {
@@ -201,6 +206,41 @@ public partial class AnGiDayContext : DbContext
                 .HasConstraintName("conversations_user_id_fkey");
         });
 
+        modelBuilder.Entity<FinancialLedger>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("financial_ledger_pkey");
+
+            entity.ToTable("financial_ledger");
+
+            entity.HasIndex(e => e.TransactionId, "idx_ledger_txn");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(l => l.EntryType).HasColumnType("ledger_entry_type").HasColumnName("entry_type");
+            entity.Property(e => e.Account)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("account");
+            entity.Property(e => e.AmountCents).HasColumnName("amount_cents");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Currency)
+                .HasMaxLength(8)
+                .HasDefaultValueSql("'VND'::character varying")
+                .HasColumnName("currency");
+            entity.Property(e => e.Metadata)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("metadata");
+            entity.Property(e => e.TransactionId).HasColumnName("transaction_id");
+
+            entity.HasOne(d => d.Transaction).WithMany(p => p.FinancialLedgers)
+                .HasForeignKey(d => d.TransactionId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("financial_ledger_transaction_id_fkey");
+        });
+
         modelBuilder.Entity<HealthProfile>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("health_profiles_pkey");
@@ -220,6 +260,57 @@ public partial class AnGiDayContext : DbContext
                 .HasForeignKey<HealthProfile>(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("health_profiles_user_id_fkey");
+        });
+
+        modelBuilder.Entity<Invoice>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("invoices_pkey");
+
+            entity.ToTable("invoices");
+
+            entity.HasIndex(e => e.UserId, "idx_invoices_user");
+            entity.HasIndex(e => e.InvoiceNumber, "invoices_invoice_number_key").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Currency)
+                .HasMaxLength(8)
+                .HasDefaultValueSql("'VND'::character varying")
+                .HasColumnName("currency");
+            entity.Property(e => e.InvoiceNumber)
+                .HasMaxLength(100)
+                .HasColumnName("invoice_number");
+            entity.Property(e => e.IssuedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("issued_at");
+            entity.Property(e => e.Metadata)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("metadata");
+            entity.Property(e => e.PaidAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("paid_at");
+            entity.Property(e => e.PdfUrl).HasColumnName("pdf_url");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasDefaultValueSql("'issued'::character varying")
+                .HasColumnName("status");
+            entity.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
+            entity.Property(e => e.TaxAmountCents)
+                .HasDefaultValue(0L)
+                .HasColumnName("tax_amount_cents");
+            entity.Property(e => e.TotalAmountCents).HasColumnName("total_amount_cents");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Subscription).WithMany(p => p.Invoices)
+                .HasForeignKey(d => d.SubscriptionId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("invoices_subscription_id_fkey");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Invoices)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("invoices_user_id_fkey");
         });
 
         modelBuilder.Entity<Like>(entity =>
@@ -375,6 +466,167 @@ public partial class AnGiDayContext : DbContext
                 .HasConstraintName("notification_users_user_id_fkey");
         });
 
+        modelBuilder.Entity<OwnerAnalytic>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("owner_analytics_pkey");
+
+            entity.ToTable("owner_analytics");
+
+            entity.HasIndex(e => new { e.RestaurantId, e.PeriodStart }, "idx_owner_analytics_period");
+            entity.HasIndex(e => new { e.RestaurantId, e.PeriodStart }, "idx_owner_analytics_restaurant_period");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Clicks)
+                .HasDefaultValue(0)
+                .HasColumnName("clicks");
+            entity.Property(e => e.GeneratedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("generated_at");
+            entity.Property(e => e.PeriodEnd).HasColumnName("period_end");
+            entity.Property(e => e.PeriodStart).HasColumnName("period_start");
+            entity.Property(e => e.RestaurantId).HasColumnName("restaurant_id");
+            entity.Property(e => e.Saves)
+                .HasDefaultValue(0)
+                .HasColumnName("saves");
+            entity.Property(e => e.Views)
+                .HasDefaultValue(0)
+                .HasColumnName("views");
+            entity.Property(e => e.Visitors)
+                .HasDefaultValueSql("'[]'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("visitors");
+
+            entity.HasOne(d => d.Restaurant).WithMany(p => p.OwnerAnalytics)
+                .HasForeignKey(d => d.RestaurantId)
+                .HasConstraintName("owner_analytics_restaurant_id_fkey");
+        });
+
+        modelBuilder.Entity<PaymentMethod>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("payment_methods_pkey");
+
+            entity.ToTable("payment_methods");
+
+            entity.HasIndex(e => e.UserId, "idx_payment_methods_user");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CardBrand)
+                .HasMaxLength(50)
+                .HasColumnName("card_brand");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.ExpMonth).HasColumnName("exp_month");
+            entity.Property(e => e.ExpYear).HasColumnName("exp_year");
+            entity.Property(e => e.IsDefault)
+                .HasDefaultValue(false)
+                .HasColumnName("is_default");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.Last4)
+                .HasMaxLength(4)
+                .HasColumnName("last4");
+            entity.Property(e => e.Metadata)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("metadata");
+            entity.Property(e => e.ProviderPmId)
+                .IsRequired()
+                .HasMaxLength(200)
+                .HasColumnName("provider_pm_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.PaymentMethods)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("payment_methods_user_id_fkey");
+        });
+
+        modelBuilder.Entity<Plan>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("plans_pkey");
+
+            entity.ToTable("plans");
+
+            entity.HasIndex(e => e.Slug, "plans_slug_key").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.AdvancedFilters)
+                .HasDefaultValue(false)
+                .HasColumnName("advanced_filters");
+            entity.Property(e => e.AiChatLevel)
+                .HasMaxLength(20)
+                .HasColumnName("ai_chat_level");
+            entity.Property(e => e.BookmarkLimit).HasColumnName("bookmark_limit");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.DiscountAmountCents).HasColumnName("discount_amount_cents");
+            entity.Property(e => e.DiscountConditions)
+                .HasColumnType("jsonb")
+                .HasColumnName("discount_conditions");
+            entity.Property(e => e.DiscountPercent)
+                .HasPrecision(5, 2)
+                .HasColumnName("discount_percent");
+            entity.Property(e => e.DiscountValidFrom)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("discount_valid_from");
+            entity.Property(e => e.DiscountValidTo)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("discount_valid_to");
+            entity.Property(e => e.FeatureFlags)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("feature_flags");
+            entity.Property(e => e.MonthlyPostLimit).HasColumnName("monthly_post_limit");
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("name");
+            entity.Property(e => e.Personalization)
+                .HasDefaultValue(false)
+                .HasColumnName("personalization");
+            entity.Property(e => e.PromotedPriority)
+                .HasDefaultValue(0)
+                .HasColumnName("promoted_priority");
+            entity.Property(e => e.RoleScope)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasColumnName("role_scope");
+            entity.Property(e => e.Slug)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnName("slug");
+        });
+
+        modelBuilder.Entity<PlanDoc>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("plan_docs_pkey");
+
+            entity.ToTable("plan_docs");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.KeyName)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("key_name");
+            entity.Property(e => e.PlanId).HasColumnName("plan_id");
+
+            entity.HasOne(d => d.Plan).WithMany(p => p.PlanDocs)
+                .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("plan_docs_plan_id_fkey");
+        });
+
         modelBuilder.Entity<Post>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("posts_pkey");
@@ -382,15 +634,10 @@ public partial class AnGiDayContext : DbContext
             entity.ToTable("posts");
 
             entity.HasIndex(e => e.CreatedAt, "idx_posts_created_at");
-
             entity.HasIndex(e => e.IsDeleted, "idx_posts_is_deleted");
-
             entity.HasIndex(e => e.RestaurantId, "idx_posts_restaurant");
-
             entity.HasIndex(e => e.SignatureFoodId, "idx_posts_signature_food");
-
             entity.HasIndex(e => e.Type, "idx_posts_type");
-
             entity.HasIndex(e => e.UserId, "idx_posts_user");
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -435,6 +682,39 @@ public partial class AnGiDayContext : DbContext
                 .HasConstraintName("posts_user_id_fkey");
         });
 
+        modelBuilder.Entity<PostPerformance>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("post_performance_pkey");
+
+            entity.ToTable("post_performance");
+
+            entity.HasIndex(e => e.PostId, "idx_post_perf_post");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Clicks)
+                .HasDefaultValue(0)
+                .HasColumnName("clicks");
+            entity.Property(e => e.GeneratedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("generated_at");
+            entity.Property(e => e.Metrics)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("metrics");
+            entity.Property(e => e.PostId).HasColumnName("post_id");
+            entity.Property(e => e.Saves)
+                .HasDefaultValue(0)
+                .HasColumnName("saves");
+            entity.Property(e => e.Views)
+                .HasDefaultValue(0)
+                .HasColumnName("views");
+
+            entity.HasOne(d => d.Post).WithMany(p => p.PostPerformances)
+                .HasForeignKey(d => d.PostId)
+                .HasConstraintName("post_performance_post_id_fkey");
+        });
+
         modelBuilder.Entity<PostTag>(entity =>
         {
             entity.HasKey(e => new { e.PostId, e.TagId }).HasName("post_tags_pkey");
@@ -454,6 +734,79 @@ public partial class AnGiDayContext : DbContext
             entity.HasOne(d => d.Tag).WithMany(p => p.PostTags)
                 .HasForeignKey(d => d.TagId)
                 .HasConstraintName("post_tags_tag_id_fkey");
+        });
+
+        modelBuilder.Entity<Promotion>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("promotions_pkey");
+
+            entity.ToTable("promotions");
+
+            entity.HasIndex(e => new { e.RestaurantId, e.IsActive }, "idx_promotions_restaurant");
+            entity.HasIndex(e => new { e.RestaurantId, e.Code }, "ux_promotions_code_restaurant").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Code)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasColumnName("code");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.DiscountAmount)
+                .HasPrecision(12, 2)
+                .HasColumnName("discount_amount");
+            entity.Property(e => e.DiscountPercent)
+                .HasPrecision(5, 2)
+                .HasColumnName("discount_percent");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.RestaurantId).HasColumnName("restaurant_id");
+            entity.Property(e => e.TimesUsed)
+                .HasDefaultValue(0)
+                .HasColumnName("times_used");
+            entity.Property(e => e.UsageLimit).HasColumnName("usage_limit");
+            entity.Property(e => e.ValidFrom)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("valid_from");
+            entity.Property(e => e.ValidTo)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("valid_to");
+
+            entity.HasOne(d => d.Restaurant).WithMany(p => p.Promotions)
+                .HasForeignKey(d => d.RestaurantId)
+                .HasConstraintName("promotions_restaurant_id_fkey");
+        });
+
+        modelBuilder.Entity<Recommendation>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("recommendation_pkey");
+
+            entity.ToTable("recommendation");
+
+            entity.HasIndex(e => new { e.RestaurantId, e.Score }, "idx_recommendation_restaurant_score").IsDescending(false, true);
+            entity.HasIndex(e => new { e.UserId, e.Score }, "idx_recommendation_user_score").IsDescending(false, true);
+            entity.HasIndex(e => new { e.UserId, e.RestaurantId }, "ux_recommendation_user_restaurant").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.RestaurantId).HasColumnName("restaurant_id");
+            entity.Property(e => e.Score).HasColumnName("score");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Restaurant).WithMany(p => p.Recommendations)
+                .HasForeignKey(d => d.RestaurantId)
+                .HasConstraintName("recommendation_restaurant_id_fkey");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Recommendations)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("recommendation_user_id_fkey");
         });
 
         modelBuilder.Entity<Report>(entity =>
@@ -487,35 +840,72 @@ public partial class AnGiDayContext : DbContext
         modelBuilder.Entity<Restaurant>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("restaurants_pkey");
+
             entity.ToTable("restaurants");
 
             entity.HasIndex(e => new { e.Latitude, e.Longitude }, "idx_restaurants_location");
+
             entity.HasIndex(e => e.Name, "idx_restaurants_name");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(100).HasColumnName("name");
-            entity.Property(e => e.Address).IsRequired().HasMaxLength(255).HasColumnName("address");
+            entity.Property(e => e.Address)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasColumnName("address");
+            entity.Property(e => e.AllowPromotion)
+                .HasDefaultValue(true)
+                .HasColumnName("allow_promotion");
             entity.Property(e => e.AvgRating)
                 .HasPrecision(3, 2)
                 .HasDefaultValueSql("0")
                 .HasColumnName("avg_rating");
-            entity.Property(e => e.OwnerId).IsRequired().HasColumnName("owner_id");
-            entity.Property(e => e.Description).IsRequired().HasColumnName("description");
-            entity.Property(e => e.PhoneNumber).IsRequired().HasMaxLength(30).HasColumnName("phone_number");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Description)
+                .IsRequired()
+                .HasColumnName("description");
+            entity.Property(e => e.ImageUrl)
+                .IsRequired()
+                .HasMaxLength(255)
+                .HasColumnName("image_url");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.Latitude).HasColumnName("latitude");
+            entity.Property(e => e.Longitude).HasColumnName("longitude");
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasColumnName("name");
+            entity.Property(e => e.OwnerId).HasColumnName("owner_id");
+            entity.Property(e => e.PhoneNumber)
+                .IsRequired()
+                .HasMaxLength(30)
+                .HasColumnName("phone_number");
+            entity.Property(e => e.PromotedPriority)
+                .HasDefaultValue(0)
+                .HasColumnName("promoted_priority");
+            entity.Property(e => e.PromotedUntil)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("promoted_until");
             entity.Property(e => e.RatingCount)
                 .HasDefaultValue(0)
                 .HasColumnName("rating_count");
-            entity.Property(e => e.ImageUrl).IsRequired().HasMaxLength(255).HasColumnName("image_url");
-            entity.Property(e => e.Status).IsRequired().HasMaxLength(20).HasDefaultValueSql("'active'::character varying").HasColumnName("status");
-            entity.Property(e => e.Latitude).IsRequired().HasColumnName("latitude");
-            entity.Property(e => e.Longitude).IsRequired().HasColumnName("longitude");
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("created_at");
-            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("now()").HasColumnType("timestamp without time zone").HasColumnName("updated_at");
-            entity.Property(e => e.IsDeleted).HasDefaultValue(false).IsRequired().HasColumnName("is_deleted");
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValueSql("'active'::character varying")
+                .HasColumnName("status");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
 
             entity.HasOne(d => d.Owner).WithMany(p => p.Restaurants)
                 .HasForeignKey(d => d.OwnerId)
-                .OnDelete(DeleteBehavior.Restrict)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("restaurants_owner_id_fkey");
         });
 
@@ -597,6 +987,47 @@ public partial class AnGiDayContext : DbContext
                 .HasConstraintName("signature_foods_restaurant_id_fkey");
         });
 
+        modelBuilder.Entity<Subscription>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("subscriptions_pkey");
+
+            entity.ToTable("subscriptions");
+
+            entity.HasIndex(e => new { e.UserId, e.IsActive, e.StartAt, e.EndAt }, "idx_subscriptions_user_active");
+            entity.HasIndex(e => new { e.UserId, e.StartAt }, "idx_subscriptions_user_start");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.EndAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("end_at");
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true)
+                .HasColumnName("is_active");
+            entity.Property(e => e.Metadata)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("metadata");
+            entity.Property(e => e.PlanId).HasColumnName("plan_id");
+            entity.Property(e => e.StartAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("start_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Plan).WithMany(p => p.Subscriptions)
+                .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("subscriptions_plan_id_fkey");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Subscriptions)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("subscriptions_user_id_fkey");
+        });
+
         modelBuilder.Entity<Tag>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("tags_pkey");
@@ -615,6 +1046,88 @@ public partial class AnGiDayContext : DbContext
                 .HasConstraintName("tags_category_id_fkey");
         });
 
+        modelBuilder.Entity<Transaction>(static entity =>
+        {
+
+            entity.HasKey(e => e.Id).HasName("transactions_pkey");
+
+            entity.ToTable("transactions");
+
+            entity.HasIndex(e => e.UserId, "idx_transactions_user");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.AmountCents).HasColumnName("amount_cents");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Currency)
+                .IsRequired()
+                .HasMaxLength(8)
+                .HasDefaultValueSql("'VND'::character varying")
+                .HasColumnName("currency");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.FailureReason).HasColumnName("failure_reason");
+            entity.Property(t => t.Provider).HasColumnType("payment_provider").HasColumnName("provider");
+            entity.Property(t => t.Status).HasColumnType("payment_status").HasColumnName("status");
+            entity.Property(e => e.IdempotencyKey)
+                .HasMaxLength(255)
+                .HasColumnName("idempotency_key");
+            entity.Property(e => e.InvoiceId).HasColumnName("invoice_id");
+            entity.Property(e => e.IsSettled)
+                .HasDefaultValue(false)
+                .HasColumnName("is_settled");
+            entity.Property(e => e.Metadata)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("metadata");
+            entity.Property(e => e.PaymentMethodId).HasColumnName("payment_method_id");
+            entity.Property(e => e.ProviderTransactionId)
+                .HasMaxLength(255)
+                .HasColumnName("provider_transaction_id");
+            entity.Property(e => e.RefundedAmountCents)
+                .HasDefaultValue(0L)
+                .HasColumnName("refunded_amount_cents");
+            entity.Property(e => e.RestaurantId).HasColumnName("restaurant_id");
+            entity.Property(e => e.SettledAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("settled_at");
+            entity.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Uuid)
+                .HasDefaultValueSql("gen_random_uuid()")
+                .HasColumnName("uuid");
+
+            entity.HasOne(d => d.Invoice).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.InvoiceId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("transactions_invoice_id_fkey");
+
+            entity.HasOne(d => d.PaymentMethod).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.PaymentMethodId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("transactions_payment_method_id_fkey");
+
+            entity.HasOne(d => d.Restaurant).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.RestaurantId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("transactions_restaurant_id_fkey");
+
+            entity.HasOne(d => d.Subscription).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.SubscriptionId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("transactions_subscription_id_fkey");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("transactions_user_id_fkey");
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("users_pkey");
@@ -622,13 +1135,9 @@ public partial class AnGiDayContext : DbContext
             entity.ToTable("users");
 
             entity.HasIndex(e => e.Email, "idx_users_email").IsUnique();
-
             entity.HasIndex(e => e.Username, "idx_users_username");
-
             entity.HasIndex(e => e.Email, "users_email_key").IsUnique();
-
             entity.HasIndex(e => e.Username, "users_username_key").IsUnique();
-
             entity.HasIndex(e => e.GoogleId, "ux_users_google_id")
                 .IsUnique()
                 .HasFilter("(google_id IS NOT NULL)");
@@ -637,6 +1146,9 @@ public partial class AnGiDayContext : DbContext
             entity.Property(e => e.AvatarUrl)
                 .HasMaxLength(255)
                 .HasColumnName("avatar_url");
+            entity.Property(e => e.BookmarkDowngradedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("bookmark_downgraded_at");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("now()")
                 .HasColumnType("timestamp without time zone")
@@ -700,6 +1212,39 @@ public partial class AnGiDayContext : DbContext
                 .HasConstraintName("users_role_id_fkey");
         });
 
+        modelBuilder.Entity<UserActivePlan>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("user_active_plan");
+
+            entity.Property(e => e.AdvancedFilters).HasColumnName("advanced_filters");
+            entity.Property(e => e.AiChatLevel)
+                .HasMaxLength(20)
+                .HasColumnName("ai_chat_level");
+            entity.Property(e => e.BookmarkLimit).HasColumnName("bookmark_limit");
+            entity.Property(e => e.EndAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("end_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.MonthlyPostLimit).HasColumnName("monthly_post_limit");
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .HasColumnName("name");
+            entity.Property(e => e.Personalization).HasColumnName("personalization");
+            entity.Property(e => e.PlanId).HasColumnName("plan_id");
+            entity.Property(e => e.RoleScope)
+                .HasMaxLength(20)
+                .HasColumnName("role_scope");
+            entity.Property(e => e.Slug)
+                .HasMaxLength(50)
+                .HasColumnName("slug");
+            entity.Property(e => e.StartAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("start_at");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+        });
+
         modelBuilder.Entity<UserLocation>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("user_locations_pkey");
@@ -729,13 +1274,9 @@ public partial class AnGiDayContext : DbContext
             entity.ToTable("user_post_interactions");
 
             entity.HasIndex(e => e.PostId, "idx_user_post_interactions_post");
-
             entity.HasIndex(e => e.PostId, "idx_user_post_interactions_post_not_deleted").HasFilter("(is_deleted = false)");
-
             entity.HasIndex(e => e.RestaurantId, "idx_user_post_interactions_restaurant");
-
             entity.HasIndex(e => e.InteractionType, "idx_user_post_interactions_type");
-
             entity.HasIndex(e => e.UserId, "idx_user_post_interactions_user");
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -848,6 +1389,38 @@ public partial class AnGiDayContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("weather_logs_user_id_fkey");
+        });
+
+        modelBuilder.Entity<WebhookEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("webhook_events_pkey");
+
+            entity.ToTable("webhook_events");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.EventType)
+                .HasMaxLength(200)
+                .HasColumnName("event_type");
+            entity.Property(e => e.Processed)
+                .HasDefaultValue(false)
+                .HasColumnName("processed");
+            entity.Property(e => e.ProcessedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("processed_at");
+            entity.Property(e => e.ProcessingResult)
+                .HasDefaultValueSql("'{}'::jsonb")
+                .HasColumnType("jsonb")
+                .HasColumnName("processing_result");
+            entity.Property(e => e.ProviderEventId)
+                .HasMaxLength(255)
+                .HasColumnName("provider_event_id");
+            entity.Property(e => e.RawPayload)
+                .HasColumnType("jsonb")
+                .HasColumnName("raw_payload");
+            entity.Property(e => e.ReceivedAt)
+                .HasDefaultValueSql("now()")
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("received_at");
         });
 
         OnModelCreatingPartial(modelBuilder);
