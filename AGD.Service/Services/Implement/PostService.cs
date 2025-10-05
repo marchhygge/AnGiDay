@@ -202,5 +202,69 @@ namespace AGD.Service.Services.Implement
                 UpdatedAt = created.UpdatedAt ?? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),     
             };
         }
+
+        public async Task<IEnumerable<PostResponse>> GetPostsByTypeAsync(string type, CancellationToken ct)
+        {
+            var posts = await _unitOfWork.PostRepository.GetPostsByTypeAsync(type, ct);
+            return posts.Select(p => new PostResponse
+            {
+                Id = p.Id,
+                UserId = p.UserId,
+                RestaurantId = p.RestaurantId,
+                Type = p.Type,
+                Content = p.Content,
+                ImageUrl = p.ImageUrl,
+                Rating = p.Rating,
+                CreatedAt = p.CreatedAt,
+                UpdatedAt = p.UpdatedAt
+            });
+        }
+
+        public async Task<PostResponse?> UpdatePostAsync(int postId, PostRequest request, CancellationToken ct)
+        {
+            var existing = await _unitOfWork.PostRepository.GetPostDetailAsync(postId, ct);
+            if (existing == null)
+            {
+                throw new Exception("Post not found");
+            }
+
+            existing.Content = request.Content ?? existing.Content;
+            existing.ImageUrl = request.ImageUrl ?? existing.ImageUrl;
+            existing.UpdatedAt = DateTime.Now;
+
+            if(existing.Type == "review")
+            {
+                if(request.Rating == null)
+                {
+                    throw new Exception("Review post must have rating.");
+                }
+                existing.Rating = request.Rating;
+            }
+
+            await _unitOfWork.PostRepository.UpdatePostAsync(existing, ct);
+
+            return new PostResponse
+            {
+                Id = existing.Id,
+                UserId = existing.UserId,
+                RestaurantId = existing.RestaurantId,
+                Type = existing.Type,
+                Content = existing.Content,
+                ImageUrl = existing.ImageUrl,
+                Rating = existing.Rating,
+                CreatedAt = existing.CreatedAt,
+                UpdatedAt = existing.UpdatedAt
+            };
+        }
+
+        public async Task<bool> DeletePostAsync(int postId, CancellationToken ct)
+        {
+            var existing = await _unitOfWork.PostRepository.GetPostDetailAsync(postId, ct);
+            if (existing == null) return false;
+
+            await _unitOfWork.PostRepository.SoftDeletePostAsync(existing, ct);
+
+            return true;
+        }
     }
 }

@@ -7,6 +7,7 @@ using AGD.Service.Shared.Result;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
+using System.Formats.Asn1;
 
 namespace AGD.API.Controllers
 {
@@ -89,6 +90,43 @@ namespace AGD.API.Controllers
             {
                 return ApiResult<PostResponse>.FailResponse($"Create post fail: {ex}", 400);
             }
+        }
+
+        [HttpGet("type/{type}")]
+        public async Task<ActionResult<ApiResult<IEnumerable<PostResponse>>>> GetPostsByType(string type, CancellationToken ct)
+        {
+            var posts = await _servicesProvider.PostService.GetPostsByTypeAsync(type, ct);
+            if(posts == null)
+                return ApiResult<IEnumerable<PostResponse>>.FailResponse($"Post with {type} not found");
+
+            return ApiResult<IEnumerable<PostResponse>>.SuccessResponse(posts);
+        }
+
+        [HttpPut("{postId:int}")]
+        public async Task<ActionResult<ApiResult<PostResponse>>> UpdatePost ([FromRoute]int postId, [FromBody] PostRequest request, CancellationToken ct)
+        {
+            try
+            {
+                var updated = await _servicesProvider.PostService.UpdatePostAsync(postId, request, ct);
+
+                if (updated == null)
+                    return ApiResult<PostResponse>.FailResponse("Post not found", 404);
+                
+                return ApiResult<PostResponse>.SuccessResponse(updated, "Update successful");
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<PostResponse>.FailResponse($"Update failed: {ex.Message}", 400);
+            }
+        }
+
+        [HttpDelete("delete/{postId:int}")]
+        public async Task<ActionResult<ApiResult<string>>> DeletePost(int postId, CancellationToken ct)
+        {
+            var success = await _servicesProvider.PostService.DeletePostAsync(postId, ct);
+            if (!success) return ApiResult<string>.FailResponse("Post not found", 404);
+
+            return ApiResult<string>.SuccessResponse("Post deleted successfully");
         }
     }
 }

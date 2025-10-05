@@ -69,6 +69,7 @@ namespace AGD.Service.Services.Implement
                 UserId = r.UserId,
                 TagId = r.TagId,
                 TagName = r.Tag.Name,
+                CategoryName = r.Tag.Category.Name,
                 IsDeleted = r.IsDeleted,
             });
         }

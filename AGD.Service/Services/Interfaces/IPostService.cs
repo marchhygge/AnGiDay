@@ -17,5 +17,8 @@ namespace AGD.Service.Services.Interfaces
         Task<DetailPostResponse> GetPostDetail(int id, CancellationToken ct = default);
         Task<LikeResponse> AddLikeAsync(LikeRequest request, CancellationToken ct = default);
         Task<PostResponse> CreatePostAsync(PostRequest request, CancellationToken ct = default);
+        Task<IEnumerable<PostResponse>> GetPostsByTypeAsync(string type, CancellationToken ct);
+        Task<PostResponse?> UpdatePostAsync(int postId, PostRequest request, CancellationToken ct);
+        Task<bool> DeletePostAsync(int postId, CancellationToken ct);
     }
 }

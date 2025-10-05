@@ -20,7 +20,7 @@ namespace AGD.Repositories.Repositories
         {
             return await _context.UserTags.AsNoTracking()
                 .Where(ut => ut.UserId == userId && ut.IsDeleted == false)
-                .Include(ut => ut.Tag)
+                .Include(ut => ut.Tag).ThenInclude(t => t.Category)
                 .ToListAsync(ct);
         }
 
