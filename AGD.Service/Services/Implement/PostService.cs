@@ -3,6 +3,7 @@ using AGD.Repositories.Repositories;
 using AGD.Service.DTOs.Request;
 using AGD.Service.DTOs.Response;
 using AGD.Service.Services.Interfaces;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 
 namespace AGD.Service.Services.Implement
@@ -76,9 +77,14 @@ namespace AGD.Service.Services.Implement
         {
             var post = await _unitOfWork.PostRepository.GetByIdAsync(ct, request.PostId);
 
-            if(post == null)
+            if (post == null)
             {
                 throw new Exception("Post not found");
+            }
+
+            if (post.Type.Equals("review", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception("You cannot like review posts");
             }
 
             var user = await _unitOfWork.UserRepository.GetByIdAsync(ct, request.UserId);
@@ -89,8 +95,9 @@ namespace AGD.Service.Services.Implement
 
             var interaction = await _unitOfWork.PostRepository.GetByUserAndPostId(request.UserId, request.PostId, ct);
 
-            if(interaction == null)
+            if (interaction == null)
             {
+
                 interaction = new Like
                 {
                     UserId = request.UserId,
@@ -126,5 +133,138 @@ namespace AGD.Service.Services.Implement
             };
         }
 
+        public async Task<PostResponse> CreatePostAsync(PostRequest request, CancellationToken ct = default)
+        {
+            if (request.Type == "review")
+            {
+                if (!request.RestaurantId.HasValue)
+                {
+                    throw new Exception("RestaurantId is required for review posts");
+                }
+
+                var restaurant = await _unitOfWork.RestaurantRepository
+                    .GetByIdAsync(ct, request.RestaurantId.Value);
+
+                if (restaurant == null)
+                    throw new Exception("Invalid RestaurantId");
+
+                if (!request.Rating.HasValue)
+                {
+                    throw new Exception("Rating is required for review posts");
+                }
+
+                if (request.Rating < 1 || request.Rating > 5)
+                    throw new Exception("Rating must be between 1 and 5");
+            }
+            else if(request.Type == "owner_post")
+            {
+                if (!request.RestaurantId.HasValue)
+                {
+                    throw new Exception("RestaurantId is required for owner posts");
+                }
+
+                var restaurant = await _unitOfWork.RestaurantRepository
+                    .GetByIdAsync(ct, request.RestaurantId.Value);
+
+                if (restaurant == null)
+                    throw new Exception("Invalid RestaurantId");
+            }
+            else if (request.Type == "community_post")
+            {
+                request.RestaurantId = null;
+            }
+
+            var post = new Post
+            {
+                UserId = request.UserId,
+                RestaurantId = request.RestaurantId,
+                Type = request.Type,
+                Content = request.Content,
+                ImageUrl = request.ImageUrl,
+                Rating = request.Type == "review" ? request.Rating : null,
+                CreatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
+                UpdatedAt = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
+                IsDeleted = false
+            };
+
+            var created = await _unitOfWork.PostRepository.CreatePostAsync(post, ct);
+
+            return new PostResponse
+            {
+                Id = created.Id,
+                UserId = created.UserId,
+                RestaurantId = created.RestaurantId,
+                Type = created.Type,
+                Content = created.Content,
+                ImageUrl = created.ImageUrl,
+                Rating = created.Rating,
+                CreatedAt = created.CreatedAt ?? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),
+                UpdatedAt = created.UpdatedAt ?? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified),     
+            };
+        }
+
+        public async Task<IEnumerable<PostResponse>> GetPostsByTypeAsync(string type, CancellationToken ct)
+        {
+            var posts = await _unitOfWork.PostRepository.GetPostsByTypeAsync(type, ct);
+            return posts.Select(p => new PostResponse
+            {
+                Id = p.Id,
+                UserId = p.UserId,
+                RestaurantId = p.RestaurantId,
+                Type = p.Type,
+                Content = p.Content,
+                ImageUrl = p.ImageUrl,
+                Rating = p.Rating,
+                CreatedAt = p.CreatedAt,
+                UpdatedAt = p.UpdatedAt
+            });
+        }
+
+        public async Task<PostResponse?> UpdatePostAsync(int postId, PostRequest request, CancellationToken ct)
+        {
+            var existing = await _unitOfWork.PostRepository.GetPostDetailAsync(postId, ct);
+            if (existing == null)
+            {
+                throw new Exception("Post not found");
+            }
+
+            existing.Content = request.Content ?? existing.Content;
+            existing.ImageUrl = request.ImageUrl ?? existing.ImageUrl;
+            existing.UpdatedAt = DateTime.Now;
+
+            if(existing.Type == "review")
+            {
+                if(request.Rating == null)
+                {
+                    throw new Exception("Review post must have rating.");
+                }
+                existing.Rating = request.Rating;
+            }
+
+            await _unitOfWork.PostRepository.UpdatePostAsync(existing, ct);
+
+            return new PostResponse
+            {
+                Id = existing.Id,
+                UserId = existing.UserId,
+                RestaurantId = existing.RestaurantId,
+                Type = existing.Type,
+                Content = existing.Content,
+                ImageUrl = existing.ImageUrl,
+                Rating = existing.Rating,
+                CreatedAt = existing.CreatedAt,
+                UpdatedAt = existing.UpdatedAt
+            };
+        }
+
+        public async Task<bool> DeletePostAsync(int postId, CancellationToken ct)
+        {
+            var existing = await _unitOfWork.PostRepository.GetPostDetailAsync(postId, ct);
+            if (existing == null) return false;
+
+            await _unitOfWork.PostRepository.SoftDeletePostAsync(existing, ct);
+
+            return true;
+        }
     }
 }

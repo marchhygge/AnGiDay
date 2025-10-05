@@ -42,6 +42,7 @@ namespace AGD.Repositories.Repositories
                 .Include(p => p.Comments)
                     .ThenInclude(c => c.InverseParent)
                     .ThenInclude(c => c.User)
+                .Include(p => p.Restaurant)
                 .FirstOrDefaultAsync(p => p.Id == postId && !p.IsDeleted, ct);
 
             return query;
@@ -72,6 +73,47 @@ namespace AGD.Repositories.Repositories
             _context.Likes.Update(like);
             await SaveChangesAsync(ct);
             return like;
+        }
+
+        public async Task<Post> CreatePostAsync(Post post, CancellationToken ct)
+        {
+            _context.Posts.Add(post);
+            await SaveChangesAsync(ct);
+            return post;
+        }
+
+        //public async Task<Post?> GetPostByIdAsync(int id, CancellationToken ct)
+        //{
+        //    return await _context.Posts
+        //        .Include(p => p.User)
+        //        .Include(p => p.Restaurant)
+        //        .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, ct);
+        //}
+
+        public async Task<IEnumerable<Post>> GetPostsByTypeAsync(string type, CancellationToken ct)
+        {
+            return await _context.Posts
+                .Where(p => p.Type == type && !p.IsDeleted)
+                .Include(p => p.User)
+                .Include(p => p.Restaurant)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync(ct);
+        }
+
+        public async Task<Post> UpdatePostAsync(Post post, CancellationToken ct)
+        {
+            _context.Posts.Update(post);
+            await SaveChangesAsync(ct);
+            return post;
+        }
+
+        public async Task<Post> SoftDeletePostAsync(Post post, CancellationToken ct)
+        {
+            post.IsDeleted = true;
+            post.UpdatedAt = DateTime.Now;
+            _context.Posts.Update(post);
+            await SaveChangesAsync(ct);
+            return post;
         }
     }
 }

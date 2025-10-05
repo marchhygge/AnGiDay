@@ -21,6 +21,8 @@ namespace AGD.Repositories.Repositories
         EmbeddingRepository EmbeddingRepository { get; }
         ConversationRepository ConversationRepository { get; }
         MessageRepository MessageRepository { get; }
+        TagRepository TagRepository { get; }
+        UserTagRepository UserTagRepository { get; }
     }
 
     public class UnitOfWork : IUnitOfWork
@@ -37,6 +39,8 @@ namespace AGD.Repositories.Repositories
         private EmbeddingRepository? _embeddingRepository;
         private ConversationRepository? _conversationRepository;
         private MessageRepository? _messageRepository;
+        private TagRepository? _tagRepository;
+        private UserTagRepository? _userTagRepository;
 
         public UnitOfWork(JwtHelper jwtHelper, AnGiDayContext context, IConfiguration configuration)
         {
@@ -52,6 +56,8 @@ namespace AGD.Repositories.Repositories
         public EmbeddingRepository EmbeddingRepository => _embeddingRepository ??= new EmbeddingRepository(_vectorConnection);
         public ConversationRepository ConversationRepository => _conversationRepository ??= new ConversationRepository(_context);
         public MessageRepository MessageRepository => _messageRepository ??= new MessageRepository(_context);
+        public TagRepository TagRepository => _tagRepository ??= new TagRepository(_context);
+        public UserTagRepository UserTagRepository => _userTagRepository ??= new UserTagRepository(_context);
         public JwtHelper JwtHelper => _jwtHelper;
 
         void IDisposable.Dispose()
