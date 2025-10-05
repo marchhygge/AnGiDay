@@ -13,5 +13,7 @@ namespace AGD.Service.Services.Interfaces
         ITokenService TokenService { get; }
         IChatService ChatService { get; }
         IWeatherProvider WeatherProvider { get; }
+        ITagService TagService { get; }
+        IUserTagService UserTagService { get; }
     }
 }

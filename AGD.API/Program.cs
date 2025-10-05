@@ -83,6 +83,9 @@ builder.Services.AddScoped<IBookmarkService, BookmarkService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IRestaurantRetrieval, RestaurantRetrieval>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<ITagService, TagService>();
+builder.Services.AddScoped<IUserTagService, UserTagService>();
+builder.Services.AddScoped<IPostService, PostService>();
 
 builder.Services.AddScoped<VectorRetrievalService>();
 builder.Services.AddScoped<ContextBuilder>();
@@ -90,7 +93,6 @@ builder.Services.AddScoped<ContextBuilder>();
 builder.Services.AddHostedService<EmbeddingIngestWorker>();
 
 builder.Services.AddScoped<IObjectStorageService, R2StorageService>();
-builder.Services.AddScoped<IPostService, PostService>();
 //Connect DB
 var enableSensitiveDataLogging = builder.Configuration.GetValue<bool>("Db:EnableSensitiveDataLogging", false);
 builder.Services.AddDbContext<AnGiDayContext>(options =>
