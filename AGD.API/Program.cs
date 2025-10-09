@@ -29,9 +29,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true);
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
+var jwtSection = builder.Configuration.GetSection("JwtSettings");
+var jwtSettings = jwtSection.Get<JwtSettings>();
 if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
-    throw new Exception("Invalid JWT settings in configuration.");
+{
+    var missing = new List<string>();
+    if (string.IsNullOrEmpty(jwtSection["Key"])) missing.Add("JwtSettings:Key (env JwtSettings__Key)");
+    if (string.IsNullOrEmpty(jwtSection["Issuer"])) missing.Add("JwtSettings:Issuer (env JwtSettings__Issuer)");
+    if (string.IsNullOrEmpty(jwtSection["Audience"])) missing.Add("JwtSettings:Audience (env JwtSettings__Audience)");
+    Console.WriteLine("ERROR: Missing JWT settings: " + string.Join(", ", missing));
+    throw new Exception("Invalid JWT settings in configuration. Missing: " + string.Join(", ", missing));
+}
+builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.Configure<GoogleIdTokenOptions>(builder.Configuration.GetSection("GoogleIdToken"));
@@ -69,8 +78,6 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
-
-builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddSingleton<IWeatherProvider, OpenMeteoWeatherProvider>();
 builder.Services.AddSingleton<IObjectStorageService, R2StorageService>();
@@ -115,7 +122,10 @@ builder.Services.AddDbContext<AnGiDayVectorContext>(options =>
     }
 });
 
-builder.Services.AddHttpClient<OllamaClient>(c => c.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"]!));
+builder.Services.AddHttpClient<OllamaClient>(c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"]!);
+});
 builder.Services.AddHttpClient<OllamaEmbeddingClient>(c => c.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"]!));
 builder.Services.AddHttpClient<OpenMeteoWeatherProvider>();
 
@@ -126,12 +136,29 @@ builder.Services.AddControllers().AddOData(options =>
 });
 
 var redisConn = builder.Configuration.GetSection("Redis")?.GetValue<string>("Configuration");
-if (string.IsNullOrWhiteSpace(redisConn))
+if (!string.IsNullOrWhiteSpace(redisConn))
 {
-    builder.Services.AddStackExchangeRedisCache(opt => opt.Configuration = redisConn);
+    Console.WriteLine($"Using Redis: {redisConn.Substring(0, Math.Min(50, redisConn.Length))}...");
+    if (redisConn.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase))
+    {
+        var cfgOpts = StackExchange.Redis.ConfigurationOptions.Parse(redisConn);
+        cfgOpts.Ssl = true;
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.ConfigurationOptions = cfgOpts;
+        });
+    }
+    else
+    {
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConn;
+        });
+    }
 }
 else
 {
+    Console.WriteLine("Redis not configured. Using in-memory cache fallback.");
     builder.Services.AddDistributedMemoryCache();
 }
 
