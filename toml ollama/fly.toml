@@ -13,6 +13,14 @@
 [[services]]
   internal_port = 11434
   protocol = "tcp"
+  processes = ["app"]
 
   [[services.ports]]
-    port = 11434
+    handlers = ["http"]
+    port = 8080
+
+  [[services.http_checks]]
+    path = "/"
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "20s"
