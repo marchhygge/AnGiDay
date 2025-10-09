@@ -1,0 +1,16 @@
+app = "angiday-redis"
+
+[build]
+  # Use local Dockerfile in this folder
+  dockerfile = "Dockerfile"
+
+[[mounts]]
+  source = "redis_data"
+  destination = "/data"
+
+[[services]]
+  internal_port = 6379
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 6379
