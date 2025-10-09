@@ -1,0 +1,18 @@
+﻿app = "angiday-ollama"
+
+[build]
+  image = "ollama/ollama:latest"
+
+[processes]
+  app = { size = "shared-cpu-2x" }   # increase CPU/RAM (try 2x or larger)
+
+[[mounts]]
+  source = "ollama_data"
+  destination = "/root/.ollama"
+
+[[services]]
+  internal_port = 11434
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 11434

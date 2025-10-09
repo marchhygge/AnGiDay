@@ -1,0 +1,16 @@
+app = "angiday"
+
+# Build using local Dockerfile in this folder
+[build]
+  dockerfile = "Dockerfile"
+
+# Optional: set process size if you need more RAM/CPU
+[processes]
+  app = { size = "shared-cpu-1x" }
+
+[[services]]
+  internal_port = 80
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
