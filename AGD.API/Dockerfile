@@ -1,23 +1,23 @@
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+﻿# Mẫu Dockerfile cho ASP.NET Core (multi-stage)
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 
-# Copy project files & restore (copying everything for simplicity)
+# copy csproj(s) and restore as distinct layers
+COPY *.sln .
+COPY AnGiDay/*.csproj ./AnGiDay/
+# nếu có thêm project, copy tương tự
+RUN dotnet restore
+
+# copy everything and build
 COPY . .
+WORKDIR /src/AnGiDay
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
-# Publish API project (project file is in this folder)
-RUN dotnet publish "AGD.API.csproj" -c Release -o /app/publish
-
-# Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+# runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS runtime
 WORKDIR /app
-
-# Copy published output
 COPY --from=build /app/publish .
-
-# Listen on port 80 inside container
-ENV ASPNETCORE_URLS=http://+:80
-EXPOSE 80
-
-# Start the API
-ENTRYPOINT ["dotnet", "AGD.API.dll"]
+# đảm bảo ứng dụng bind tới port Fly gán (đọc PORT trong Program.cs là an toàn nhất)
+ENV ASPNETCORE_ENVIRONMENT=Production
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "AnGiDay.dll"]
