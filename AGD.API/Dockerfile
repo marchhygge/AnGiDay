@@ -2,16 +2,16 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy everything and publish the API project
+# Copy project files & restore (copying everything for simplicity)
 COPY . .
-# Publish will perform restore for the specified project
-RUN dotnet publish "AGD.API/AGD.API.csproj" -c Release -o /app/publish
+
+# Publish API project (project file is in this folder)
+RUN dotnet publish "AGD.API.csproj" -c Release -o /app/publish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
-# Optional: reduce image size by removing unused locales (Debian-based runtime already trimmed)
 # Copy published output
 COPY --from=build /app/publish .
 
