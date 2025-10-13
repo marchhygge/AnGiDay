@@ -26,7 +26,8 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true);
+// Load environment-specific settings instead of always loading Development file
+builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true);
 
 var workerOnly = builder.Configuration.GetValue<bool>("WORKER_ONLY", false);
 
