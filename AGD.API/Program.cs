@@ -28,19 +28,25 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true);
 
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-var jwtSection = builder.Configuration.GetSection("JwtSettings");
-var jwtSettings = jwtSection.Get<JwtSettings>();
-if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
+var workerOnly = builder.Configuration.GetValue<bool>("WORKER_ONLY", false);
+
+JwtSettings? jwtSettings = null;
+if (!workerOnly)
 {
-    var missing = new List<string>();
-    if (string.IsNullOrEmpty(jwtSection["Key"])) missing.Add("JwtSettings:Key (env JwtSettings__Key)");
-    if (string.IsNullOrEmpty(jwtSection["Issuer"])) missing.Add("JwtSettings:Issuer (env JwtSettings__Issuer)");
-    if (string.IsNullOrEmpty(jwtSection["Audience"])) missing.Add("JwtSettings:Audience (env JwtSettings__Audience)");
-    Console.WriteLine("ERROR: Missing JWT settings: " + string.Join(", ", missing));
-    throw new Exception("Invalid JWT settings in configuration. Missing: " + string.Join(", ", missing));
+    builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+    var jwtSection = builder.Configuration.GetSection("JwtSettings");
+    jwtSettings = jwtSection.Get<JwtSettings>();
+    if (jwtSettings == null || string.IsNullOrEmpty(jwtSettings.Key))
+    {
+        var missing = new List<string>();
+        if (string.IsNullOrEmpty(jwtSection["Key"])) missing.Add("JwtSettings:Key (env JwtSettings__Key)");
+        if (string.IsNullOrEmpty(jwtSection["Issuer"])) missing.Add("JwtSettings:Issuer (env JwtSettings__Issuer)");
+        if (string.IsNullOrEmpty(jwtSection["Audience"])) missing.Add("JwtSettings:Audience (env JwtSettings__Audience)");
+        Console.WriteLine("ERROR: Missing JWT settings: " + string.Join(", ", missing));
+        throw new Exception("Invalid JWT settings in configuration. Missing: " + string.Join(", ", missing));
+    }
+    builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 }
-builder.Services.AddSingleton<JwtSettings>(sp => sp.GetRequiredService<IOptions<JwtSettings>>().Value);
 
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.Configure<GoogleIdTokenOptions>(builder.Configuration.GetSection("GoogleIdToken"));
@@ -77,7 +83,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add services to the container.
 builder.Services.AddSingleton<JwtHelper>();
 builder.Services.AddSingleton<IWeatherProvider, OpenMeteoWeatherProvider>();
 builder.Services.AddSingleton<IObjectStorageService, R2StorageService>();
@@ -97,7 +102,15 @@ builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<VectorRetrievalService>();
 builder.Services.AddScoped<ContextBuilder>();
 
-builder.Services.AddHostedService<EmbeddingIngestWorker>();
+var enableEmbeddingWorker = builder.Configuration.GetValue<bool>("ENABLE_EMBEDDING_WORKER", true);
+if (enableEmbeddingWorker)
+{
+    builder.Services.AddHostedService<EmbeddingIngestWorker>();
+}
+else
+{
+    Console.WriteLine("EmbeddingIngestWorker disabled via ENABLE_EMBEDDING_WORKER=false");
+}
 
 builder.Services.AddScoped<IObjectStorageService, R2StorageService>();
 //Connect DB
@@ -129,11 +142,14 @@ builder.Services.AddHttpClient<OllamaClient>(c =>
 builder.Services.AddHttpClient<OllamaEmbeddingClient>(c => c.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"]!));
 builder.Services.AddHttpClient<OpenMeteoWeatherProvider>();
 
-builder.Services.AddControllers().AddOData(options =>
+if (!workerOnly)
 {
-    options.Select().Filter().OrderBy().Expand().SetMaxTop(100).Count();
-    options.AddRouteComponents("odata", GetEdmModel());
-});
+    builder.Services.AddControllers().AddOData(options =>
+    {
+        options.Select().Filter().OrderBy().Expand().SetMaxTop(100).Count();
+        options.AddRouteComponents("odata", GetEdmModel());
+    });
+}
 
 var redisConn = builder.Configuration.GetSection("Redis")?.GetValue<string>("Configuration");
 if (!string.IsNullOrWhiteSpace(redisConn))
@@ -162,85 +178,102 @@ else
     builder.Services.AddDistributedMemoryCache();
 }
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+if (!workerOnly)
 {
-    options.SupportNonNullableReferenceTypes();
-    options.SwaggerDoc(
-         "v1",
-         new OpenApiInfo
-         {
-             Title = "AnGiDay API - V1",
-             Version = "v1"
-         }
-    );
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Nhập token theo định dạng: Bearer {your JWT token}"
+        options.SupportNonNullableReferenceTypes();
+        options.SwaggerDoc(
+             "v1",
+             new OpenApiInfo
+             {
+                 Title = "AnGiDay API - V1",
+                 Version = "v1"
+             }
+        );
+        options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Nhập token theo định dạng: Bearer {your JWT token}"
+        });
+
+        options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
     });
 
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    //Mapper
+    builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+                .AddJwtBearer(options =>
                 {
+                    options.RequireHttpsMetadata = false;
+                    options.SaveToken = true;
+                    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
                     {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        Array.Empty<string>()
-                    }
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = jwtSettings!.Issuer,
+                        ValidAudience = jwtSettings!.Audience,
+                        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings!.Key)),
+                        ClockSkew = TimeSpan.Zero,
+                        RoleClaimType = ClaimTypes.Role,
+                        NameClaimType = "sub"
+                    };
                 });
-});
 
-//Mapper
-//builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
-
-builder.Services.AddAuthentication(options =>
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("4"));
+        options.AddPolicy("RequireEmployeeRole", policy => policy.RequireRole("3"));
+        options.AddPolicy("RequireUserRole", policy => policy.RequireRole("2"));
+        options.AddPolicy("RequireOwnerRole", policy => policy.RequireRole("1"));
+    });
+}
+else
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-            .AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings!.Issuer,
-                    ValidAudience = jwtSettings!.Audience,
-                    IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings!.Key)),
-                    ClockSkew = TimeSpan.Zero,
-                    RoleClaimType = ClaimTypes.Role,
-                    NameClaimType = "sub"
-                };
-            });
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("4"));
-    options.AddPolicy("RequireEmployeeRole", policy => policy.RequireRole("3"));
-    options.AddPolicy("RequireUserRole", policy => policy.RequireRole("2"));
-    options.AddPolicy("RequireOwnerRole", policy => policy.RequireRole("1"));
-});
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+    builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+}
 
 builder.Services.AddRedisAndServices(builder.Configuration);
+
+if (workerOnly)
+{
+    Console.WriteLine("Starting in WORKER_ONLY mode.");
+    var ensureWorker = builder.Configuration.GetValue<bool>("ENABLE_EMBEDDING_WORKER", true);
+    if (!ensureWorker)
+    {
+        Console.WriteLine("WORKER_ONLY=true but ENABLE_EMBEDDING_WORKER=false -> registering EmbeddingIngestWorker for this process.");
+        builder.Services.AddHostedService<EmbeddingIngestWorker>();
+    }
+
+    var host = builder.Build();
+    await host.RunAsync();
+    return;
+}
 
 var app = builder.Build();
 
